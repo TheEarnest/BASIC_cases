@@ -1,0 +1,38 @@
+#! /bin/bash
+###############################################################################
+# ensemble info
+#------------------------------------------------------------------------------
+. ${fhome}/func_debug_Setting_$DebugLev
+#
+JobStartTime=`date`; echo ${Line_Break}; echo ${Line_Break}
+JobName=func_getFilenameFromList 
+# 
+echo "Starting "${JobName}" ...... "
+###############################################################################
+DateTime=${Date_time}; . ${fhome}/func_split_datetime
+echo `python -V `
+
+DateTimeStr=`${fhome}/func_defdate.py ${yy} ${mm} ${dd} ${ss} ${DataIngestion_dt}`
+ . ${fhome}/func_split_python_datetime
+ThisDIDataFN=${SP_Prefix}_${yy}${mm}${dd}_${ss}.nc
+NextDIDataFN=${SP_Prefix}_${ny}${nm}${nd}_${ns}.nc
+is_NdgData_in_nextFN=`grep ${NextDIDataFN} ${BCK_dataDir}/../${MetDataList}` || is_NdgData_in_nextFN="FALSE"
+
+if [ "${is_NdgData_in_nextFN}" == "FALSE" ]; then
+  nlthisfile=`grep -n "${ThisDIDataFN}" ${BCK_dataDir}/../${MetDataList} | awk -F ":" '{print $1}' `
+  #(( newnl = nlthisfile + 1 ))
+  newnl=`echo "scale=0;(${nlthisfile}+1)" | bc -l `
+  NextDIDataFN=`awk "NR==${newnl}" ${BCK_dataDir}/../${MetDataList} `
+  newnl2=`echo "scale=0;(${nlthisfile}+2)" | bc -l `
+else
+  nlnextfile=`grep -n "${NextDIDataFN}" ${BCK_dataDir}/../${MetDataList} | awk -F ":" '{print $1}' `
+  #(( newnl = nlnextfile - 1 ))
+  newnl=`echo "scale=0;(${nlnextfile}-1)" | bc -l `
+  ThisDIDataFN=`awk "NR==${newnl}" ${BCK_dataDir}/../${MetDataList} `
+  newnl2=`echo "scale=0;(${nlthisfile}+1)" | bc -l `  
+fi
+AfterNextDIDataFN=`awk "NR==${newnl2}" ${BCK_dataDir}/../${MetDataList} `
+###############################################################################
+echo ${JobStartTime}
+echo `date`" || "${JobName}
+echo ${Line_Break}

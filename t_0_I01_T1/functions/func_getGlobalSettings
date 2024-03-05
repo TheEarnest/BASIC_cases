@@ -1,0 +1,42 @@
+#! /bin/bash
+# -----------------------------------------------------
+# Global configurations
+ulimit -s unlimited
+ulimit -c unlimited
+envConfigFilePath=functions; . ${fhome}/func_getenvxmlValue
+# `func_getenvxmlValue "//global-parameters/param" ""`
+export workhome=`func_getenvxmlValue "//global-parameters/param" "work base home"`
+export CasePrefix=`func_getenvxmlValue "//case" "Common name"`
+export DI_Method=`func_getenvxmlValue "//global-parameters/param" "Method"`
+export DebugLev=`func_getenvxmlValue "//global-parameters/param" "Debug level"`
+export HPC=`func_getenvxmlValue "//global-parameters/param" "HPC server"`
+export CPU_account=`func_getenvxmlValue "//global-parameters/param" "CPU account"`
+export User_mail=`func_getenvxmlValue "//global-parameters/param" "User mail account"`
+export Models=`func_getenvxmlValue "//global-parameters/param" "Name of model"`
+export DIC=`func_getenvxmlValue "//global-parameters/param" "Data ingestion cycle"`
+export RunCycle=`func_getenvxmlValue "//global-parameters/param" "Model Run cycle"`
+export supported_models=`func_getenvxmlValue "//global-parameters/param" "Supported models"`
+export running_case=`func_getenvxmlValue "//global-parameters/param" "Models used in current case"`
+export DataIngestion_dt=`func_getenvxmlValue "//global-parameters/param" "Data Ingestion time step"`
+export DIData=`func_getenvxmlValue "//global-parameters/param" "Ingestion Data Dir"`
+export Shome=`func_getenvxmlValue "//global-parameters/param" "STERCP home dir"`
+export Swork=`func_getenvxmlValue "//global-parameters/param" "STERCP work dir"`
+export DataIngestionCommPool=`func_getenvxmlValue "//global-parameters/param" "Common Data Ingestion pool"`
+export qsub=`func_getenvxmlValue "//global-parameters/param" "Job Submitting"`
+export DataIngestionCommPrefix=`func_getenvxmlValue "//global-parameters/param" "Common ingestion data prefix"`
+#export DataIngestionBCKhome=`func_getenvxmlValue "//global-parameters/param" "Backup home for temporary verification" value="/work/earnest/temp"`
+export DataIngestionBCK=`func_getenvxmlValue "//global-parameters/param" "Backup dir for temporary verification"`
+export is_backup_N=`func_getenvxmlValue "//global-parameters/param" "Should we backup ingested data"`
+export StopWritingS=`func_getenvxmlValue "//global-parameters/param" "Seconds after stopping writting"` 
+export sleepS=`func_getenvxmlValue "//global-parameters/param" "Seconds waiting for next file check"`
+export MaxSleepCounter=`func_getenvxmlValue "//global-parameters/param" "Maximum sleep counter"`
+export SP_Prefix=`func_getenvxmlValue "//global-parameters/param" "Prefix for spectral ingestion files"`
+export CDO=`func_getenvxmlValue "//global-parameters/param" "cdo executable"`
+export ModelStartData=`func_getenvxmlValue "//global-parameters/param" "Model start date"`
+export ModelStopData=`func_getenvxmlValue "//global-parameters/param" "Model Stop date"`
+export ModelIntegrationCycle=`func_getenvxmlValue "//global-parameters/param" "Model Integration Cycle"`
+export NudTimeScale=`func_getenvxmlValue "//global-parameters/param" "Relaxation time scale"`
+export Line_Break=`func_getenvxmlValue "//global-parameters/param" "Line break"`
+export CPU_cores2nodes=`func_getenvxmlValue "//global-parameters/param" "CPU cores per node"`
+
+. ${fhome}/func_debug_Setting_${DebugLev}

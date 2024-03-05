@@ -1,0 +1,61 @@
+#! /bin/bash
+###############################################################################
+. ${fhome}/func_debug_Setting_$DebugLev
+JobStartTime=`date`; echo ${Line_Break}; echo ${Line_Break}
+JobName=func_vi_Common2Model 
+#tempPrefix=t_${JobName}
+echo "Starting "${JobName}" ...... "
+###############################################################################
+
+#SourceData=${DataIngestionCommPool}/${Model}/${DataIngestionCommPrefix}_${yy}${mm}${dd}_${ss}.nc
+
+SPN_dataDir=${DIData}/${Model}
+SourceData=${SPN_dataDir}/${tempPrefix}_CL_sync
+SNworkhome=${SPN_dataDir}/work
+if [ -f ${SourceData} ]; then
+
+  cd ${SNworkhome}
+  rm -f ${SNworkhome}/*
+  cp -f ${SupportData}/func_vertinterpolation.ncl .
+  if [ ! -f ${SPN_dataDir}/Model_hybab.nc ]; then
+    cp -f ${SupportData}/Model_hybab.nc ${SPN_dataDir}/ ; fi
+
+  SDname=${tempPrefix}_SourceData.nc
+  SHRname=${DIData}/hybab_N.nc
+  TDname=${tempPrefix}_TargetData.nc
+  TLname=${tempPrefix}_template.nc
+  TLHRname=${SPN_dataDir}/Model_hybab.nc
+  cp ${SourceData} ${SDname}
+  cp -f ${SPN_dataDir}/${Model_1step_template} ${TLname}
+
+####MSD#
+###  ${CDO} -b 32B copy -mulc,${TScounter} -remapcon,${SupportData}/Model_griddes.txt  \
+###         ${SourceData} ${SDname}
+####msd#
+#  ${CDO} -b 32B copy -remapcon,${SupportData}/Model_griddes.txt  \
+#         ${SourceData} ${SDname}
+#  cp ${SourceData} ${SDname}
+
+  T_T_vname="T";          S_T_vname="t";
+  T_U_vname="U";          S_U_vname="u";
+  T_V_vname="V";          S_V_vname="v";
+  T_PS_vname="PS";        S_PS_vname="sp";
+#  T_Lon_name="lon"; S_Lon_name="lon";
+#  T_Lat_name="lat";  S_Lat_name="lat";
+#  echo " Datalon  = SHYBin->${S_Lon_name}" > func_read_nc_variable_S_lonlat.ncl
+#  echo " Datalat  = SHYBin->${S_Lat_name}" >> func_read_nc_variable_S_lonlat.ncl
+  vnames="PS T U V"
+
+  . ${SupportData}/func_Model_vertinterpolation
+
+  wait
+  #${SupportData}/func_change_CAM_yymmddss.py ${TDname} ${yy}${mm}${dd} ${ss} # move to post preparing 
+  #mv ${TDname} DI_Data_${yy}${mm}${dd}_${ss}.nc
+  mv ${TDname} ${tempPrefix}_ML_sync 
+
+fi # end of Model_output exist
+###############################################################################
+. ${fhome}/func_debug_Setting_$DebugLev
+echo ${JobStartTime}
+echo `date`" || "${JobName}
+echo ${Line_Break}

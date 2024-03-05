@@ -1,0 +1,9 @@
+#! /bin/bash 
+set +x
+yy=`echo ${DateTime} | cut -c1-4`
+mm=`echo ${DateTime} | cut -c6-7`
+dd=`echo ${DateTime} | cut -c9-10`
+ss=`echo ${DateTime} | cut -c12-16`
+hh=`echo "scale=0;(${ss}/3600)" | bc -l `
+hh=`echo 00${hh} | tail -c 3`
+. ${fhome}/func_debug_Setting_${DebugLev}

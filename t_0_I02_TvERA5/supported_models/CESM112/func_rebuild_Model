@@ -1,0 +1,131 @@
+#! /bin/bash
+if [ "${is_rebuild_Model}" == "TRUE" ]; then
+  cd /cluster/projects/nn9385k/people/earnest/cesm1_1_2/scripts #MSNU#
+
+  [ ! -z ${Model_script_dir} ] && [ -d ${Model_script_dir} ] && rm -rf ${Model_script_dir}
+echo $model_type
+
+  if [ "${model_type}" == "couple" ]; then
+    # CESM1 compset
+    ./create_newcase -case ${Model_script_dir} -compset B20TRC5CN -res f09_g16 -mach ${HPC} -pecount L
+  elif [ "${model_type}" == "AMIP" ]; then
+    # CAM5 compset; #FAMIPC5; #FC5
+    ./create_newcase -case ${Model_script_dir} -compset FC5 -res f09_f09 -mach ${HPC} -pecount L
+  elif [ "${model_type}" == "OMIP" ]; then
+    # POP compset 
+    echo "not implement yet "
+  fi
+
+  ty=${yy};tm=${mm};td=${dd};
+  DateTime=${Model_ref_date}-00000; . ${fhome}/func_split_datetime
+  Ry=${yy};Rm=${mm};Rd=${dd};yy=${ty};mm=${tm};dd=${td};
+
+  cd ${Model_script_dir}
+  ./xmlchange -file env_run.xml -id LOGDIR -val ${Model_work_dir}/../bld/logs
+  ./xmlchange -file env_run.xml -id RUNDIR -val ${Model_work_dir}
+  ./xmlchange -file env_run.xml -id STOP_OPTION -val nmonths
+  ./xmlchange -file env_run.xml -id STOP_N -val ${ModelIntegrationCycle}
+  ./xmlchange -file env_run.xml -id RESUBMIT -val 0
+  ./xmlchange -file env_run.xml -id DOUT_S_ROOT -val ${Model_work_dir}/../../archive/\${CASE}
+  DateTime=${Date_time_ini}; . ${fhome}/func_split_datetime
+  ./xmlchange -file env_run.xml -id CONTINUE_RUN -val ${is_ContinueRun}
+  ./xmlchange -file env_run.xml -id RUN_STARTDATE -val ${yy}-${mm}-${dd}
+  ./xmlchange -file env_run.xml -id RUN_REFDATE -val ${Ry}-${Rm}-${Rd}
+  ./xmlchange -file env_run.xml -id RUN_TYPE -val ${run_type}
+  ./xmlchange -file env_run.xml -id RUN_REFCASE -val ${Model_ref_case}
+  ./xmlchange -file env_run.xml -id GET_REFCASE -val FALSE
+
+  if [ "${model_type}" == "AMIP" ] || [ ${Model_CPU_req} -le 128 ]; then
+    ./xmlchange -file env_mach_pes.xml -id NTASKS_ATM -val ${Model_CPU_req}
+    ./xmlchange -file env_mach_pes.xml -id NTASKS_LND -val ${Model_CPU_req}
+    ./xmlchange -file env_mach_pes.xml -id NTASKS_ICE -val ${Model_CPU_req}
+    ./xmlchange -file env_mach_pes.xml -id NTASKS_OCN -val ${Model_CPU_req}
+    ./xmlchange -file env_mach_pes.xml -id NTASKS_CPL -val ${Model_CPU_req}
+    ./xmlchange -file env_mach_pes.xml -id NTASKS_GLC -val ${Model_CPU_req}
+    ./xmlchange -file env_mach_pes.xml -id NTASKS_ROF -val ${Model_CPU_req}
+    ./xmlchange -file env_mach_pes.xml -id TOTALPES -val ${Model_CPU_req}
+  fi
+  if [ ${Model_CPU_req} -le 128 ]; then
+    ./xmlchange -file env_mach_pes.xml -id ROOTPE_ATM -val 0
+    ./xmlchange -file env_mach_pes.xml -id ROOTPE_LND -val 0
+    ./xmlchange -file env_mach_pes.xml -id ROOTPE_ICE -val 0
+    ./xmlchange -file env_mach_pes.xml -id ROOTPE_OCN -val 0
+    ./xmlchange -file env_mach_pes.xml -id ROOTPE_CPL -val 0
+    ./xmlchange -file env_mach_pes.xml -id ROOTPE_ROF -val 0
+  fi
+
+  if [ "${model_type}" == "couple" ]; then
+    ./xmlchange -file env_run.xml -id RUN_TYPE -val branch
+  elif [ "${model_type}" == "AMIP" ]; then
+    # CAM5 compset
+    echo "what??"
+  fi
+
+
+
+  org_CAM_CONFIG_OPTS=`grep CAM_CONFIG_OPTS  env_build.xml | awk -F "value=\"" '{print $2}' | awk -F "\" " '{print  $1}'`
+  is_OfflineDyn_defined=`echo ${org_CAM_CONFIG_OPTS} | grep offline_dyn` || is_OfflineDyn_defined="False"
+  if [ "${is_OfflineDyn_defined}" == "False" ]; then
+    new_CAM_CONFIG_OPTS=${org_CAM_CONFIG_OPTS}" -offline_dyn "
+  else
+    new_CAM_CONFIG_OPTS=${org_CAM_CONFIG_OPTS}
+  fi
+  ./xmlchange -file env_build.xml -id CAM_CONFIG_OPTS -val "${new_CAM_CONFIG_OPTS}"
+  ./xmlchange -file env_build.xml -id EXEROOT -val ${Model_work_dir}/../bld
+
+  ./cesm_setup
+
+  # keep HPC configuration in case of performing individual test
+  if [ "${HPC}" == "hexagon" ]; then
+    sed -i s/"PBS -N ".*/"PBS -N r_${CaseName}"/g  ${CaseName}.run
+    sed -i s/"PBS -A ".*/"PBS -A ${CPUACCOUNT}"/g  ${CaseName}.run
+    sed -i s/"PBS -l walltime".*/"PBS -l walltime=00:59:00"/g ${CaseName}.run
+    sed -i s/"FC            :=".*/"FC         :=  time ftn -traceback "/g Macros
+  elif [ "${HPC}" == "fram" ]; then
+    #sed -i s/"#SBATCH --job-name=".*/"#SBATCH --job-name=r_${CaseName}"/g  ${CaseName}.run
+    sed -i s/"#SBATCH --error=".*/"#SBATCH --error=r_${CaseName}_err"/g  ${CaseName}.run
+    sed -i s/"#SBATCH --output=".*/"#SBATCH --output=r_${CaseName}_out"/g  ${CaseName}.run
+    sed -i s/"#SBATCH --account=".*/"#SBATCH --account=${CPUACCOUNT}"/g  ${CaseName}.run
+    sed -i s/"#SBATCH --time=".*/"#SBATCH --time=00:59:00"/g ${CaseName}.run
+    sed -i s/"FC            :=".*/"FC         :=  time mpiifort -traceback "/g Macros
+  fi
+
+  # update SLURM environments
+  #sed -i s/"setenv SLURM_MEM_PER_CPU".*/"#setenv SLURM_MEM_PER_CPU"/g  ${CaseName}.run
+  #sed -i s/"setenv SLURM_MEM_PER_CPU".*/"unset SLURM_MEM_PER_NODE; unset SLURM_MEM_PER_GPU"/g  ${CaseName}.run
+
+  cam_namelist=user_nl_cam
+  cat ${SupportData}/ToBeUpdated_atm_namelist >> ${cam_namelist}
+  sedStr=`echo "met_data_file = \'${SP_Prefix}_${yy}${mm}${dd}_${ss}.nc\'"  | sed 's/\//\\\\\//g' `
+  sed -i s/"met_data_file".*/"${sedStr}"/g  ${cam_namelist}
+  sedStr=`echo met_data_path = \'${BCK_dataDir}\' | sed 's/\//\\\\\//g' `
+  sed -i s/"met_data_path".*/"${sedStr}"/g  ${cam_namelist}
+  sedStr=`echo met_filenames_list = \'${BCK_dataDir}/../${MetDataList}\' | sed 's/\//\\\\\//g' `
+  sed -i s/"met_filenames_list".*/"${sedStr}"/g  ${cam_namelist}
+  sed -i s/"met_max_rlx =".*/"met_max_rlx = ${met_rlx}"/g  ${cam_namelist}
+
+  if [ "${model_type}" == "AMIP" ]; then
+    [ "${HPC}" == "betzy" ] &&  ./xmlchange -file env_run.xml -id SSTICE_DATA_FILENAME -val "/cluster/projects/nn9385k/people/earnest/AMIP/sst_HadOIBl_bc_0.9x1.25_1850_2017_c180507.nc"
+    [ "${HPC}" == "fram" ] &&  ./xmlchange -file env_run.xml -id SSTICE_DATA_FILENAME -val "/cluster/projects/nn9385k/CMIP6_forcing/AMIP/sst_HadOIBl_bc_0.9x1.25_1850_2008_c100127.nc"
+    ./xmlchange -file env_run.xml -id SSTICE_YEAR_ALIGN -val 1850
+    ./xmlchange -file env_run.xml -id SSTICE_YEAR_START -val 1850
+    ./xmlchange -file env_run.xml -id SSTICE_YEAR_END -val 2008
+  fi
+
+  cp -f ${SupportData}/SourceMods/src.cam/* ./SourceMods/src.cam/
+  cd ./SourceMods/src.cam/
+  gzip -d *
+  cd ../../
+  if [ "${HPC}" == "hexagon" ]; then
+    sed -i s/"module load craype\/2.4.2"/"module swap craype craype\/2.4.2"/g env_mach_specific
+    echo "setenv MPICH_NO_BUFFER_ALIAS_CHECK 1" >> env_mach_specific
+  fi
+  #cleanbuildscript=`ls ${CaseName}*.clean_build `
+  #${cleanbuildscript}
+  buildscript=`ls ${CaseName}*.build`
+ # ./${buildscript}
+  mkdir -p ${Model_work_dir}/../bld/logs/bld
+  mkdir -p ${Model_work_dir}/
+fi
+
+

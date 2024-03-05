@@ -1,0 +1,209 @@
+#! /bin/bash
+###############################################################################
+# 
+#------------------------------------------------------------------------------
+. ${fhome}/func_debug_Setting_${DebugLev}
+envConfigFilePath=functions; . ${fhome}/func_getenvxmlValue
+#
+JobStartTime=`date`; echo ${Line_Break}; echo ${Line_Break}
+JobName=func_${DI_Method}_DI_preparing 
+# 
+echo "Starting "${JobName}" ...... "
+tempPrefix=t_"DI_prep"$$
+###############################################################################
+# waiting for the output data 
+# (Note: for any initial launch, the output file should comes from previous simulation, either a default one or one kept in job repository)
+#
+is_DI_DataPreparing=${FlagsDir}/DI_DataPreparing_$$$$
+is_level_checked=${FlagsDir}/Level_checked
+is_level_dentical=${FlagsDir}/vertical_level_identical
+
+echo "Preparing data ..." > ${is_DI_DataPreparing}
+if [ ! -f ${is_level_checked} ]; then
+  is_vertical_level_identical=0
+  cd ${DIData}/
+  is_waiting_Model_level_info=1
+  while [ "${is_waiting_Model_level_info}" == "1" ]; do
+    is_all_model_level_ready=1
+    for Model in ${Models}; do
+      sleep ${sleepS}s
+      [ ! -d ${DIData}/${Model} ] && mkdir -p ${DIData}/${Model}
+      if [ ! -f ${DIData}/${Model}/lev_hyai ]; then is_all_model_level_ready=0; fi
+    done
+    [ "${is_all_model_level_ready}" == "1" ] && is_waiting_Model_level_info=0
+  done
+  touch */lev_hyai
+  sleep ${sleepS}s
+  #MS: vertical interpolation has to be implemented in order to get correct level information for any PS chhanges. 
+  levelDiffCheck=`diff -q --from-file */lev_hyai;  echo $?`
+  [ "${levelDiffCheck}" == "0" ] && is_vertical_level_identical=1
+  [ "${is_vertical_level_identical}" == "1" ] && echo "1" > ${is_level_dentical}
+  echo "1" > ${is_level_checked}
+else
+  if [ -f ${is_level_dentical} ]; then
+    is_vertical_level_identical=1
+  else
+    is_vertical_level_identical=0
+  fi
+fi
+#is_vertical_level_identical=0
+
+while [ -f ${is_DI_DataPreparing} ]; do
+  is_all_data_ready=1
+  for Model in ${Models}; do
+    envConfigFilePath=${supported_models}/${Model}; . ${fhome}/func_getenvxmlValue
+    SupportData=${scripthome}/${supported_models}/${Model}
+    CaseName=`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "Case Name"`
+    Model_output_name=`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "output name"`
+    Model_work_dir=`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "work dir"`
+    Model_output=${Model_work_dir}/${Model_output_name}
+
+    is_Model_ready=${FlagsDir}/MD_${Model}_is_ready
+    if [ ! -f ${Model_output} ] && [ ! -f ${is_Model_ready} ] ; then
+      is_all_data_ready=0
+    else
+      if [ ! -f ${is_Model_ready} ]; then
+        data_UVT_org=${DIData}/${Model}/data_${Model}_UVT_org_${yy}-${mm}-${dd}-${ss}
+        data_vi=${DIData}/${Model}/data_${Model}_vi_${yy}-${mm}-${dd}-${ss}
+        if [ "${is_vertical_level_identical}" == "1" ]; then
+          . ${SupportData}/func_novi_Model2Common
+        else
+          . ${SupportData}/func_vi_Model2Common
+        fi
+        rm -f ${data_UVT_org};mv ${SDname} ${data_UVT_org}
+      # -------------------------------------------
+      # after vertical interpolation has been done
+#        cp ${Model_output} ${data_org} & 
+        file2check=${data_vi}
+        . ${fhome}/func_FileIsWriting
+        # Data ingestion part 
+        ${CDO} -selvar,sp ${data_vi} ${DIData}/${Model}/data_${Model}_sp
+        ${CDO} -delete,name=sp ${data_vi} ${data_vi}_nosp
+        if [ "${is_vertical_level_identical}" == "1" ]; then
+          cp -f ${data_vi}_nosp ${DIData}/${Model}/data_${Model}_vihi
+        else
+          ${CDO} -remapcon,${fhome}/grid.txt ${data_vi}_nosp ${DIData}/${Model}/data_${Model}_vihi
+        fi
+        # additional flag to identify file status 
+        echo "1" > ${is_Model_ready}
+      fi
+    fi
+  done
+  if [ "${is_all_data_ready}" == "1" ]; then
+    rm ${is_DI_DataPreparing}; rm -f ${FlagsDir}/MD_*_is_ready
+  fi
+  sleep ${sleepS}s
+done
+envConfigFilePath=functions; . ${fhome}/func_getenvxmlValue
+# remove old flag
+cd ${DataIngestionCommPool}
+DataIngestionCommData=${DataIngestionCommPool}/${DataIngestionCommPrefix}_${yy}${mm}${dd}_${ss}
+${CDO} -ensmean  ${DIData}/*/data_*_vihi DI_interM_visp$$
+#ncea ${DIData}/*/data_*_vihi DI_interM_visp$$
+mv DI_interM_visp$$ ${DataIngestionCommData}
+
+# Common data for each model 
+for Model in ${Models}; do
+  DataIngestionModelData=${DataIngestionCommPool}/${Model}/${DataIngestionCommPrefix}_${yy}${mm}${dd}_${ss}.nc
+  ln -sf ${DataIngestionCommData} ${DataIngestionModelData}  
+done
+
+
+nModel=0
+for Model in ${Models}; do
+  SupportData=${scripthome}/${supported_models}/${Model}
+  DataIngestionModelData=${DataIngestionCommPool}/${Model}/${DataIngestionCommPrefix}_${yy}${mm}${dd}_${ss}.nc
+  DataIngestionData=${DIData}/${Model}/DI_Data_${yy}${mm}${dd}_${ss}.nc
+  cd ${DIData}/${Model}/
+
+  if [ "${is_vertical_level_identical}" == "1" ]; then
+    cp ${DataIngestionModelData} ${tempPrefix}_sync
+  else
+    ${CDO} -b 32B copy -remapcon,${SupportData}/Model_griddes.txt ${DataIngestionModelData} ${tempPrefix}_sync
+  fi
+
+  ${CDO} merge ${tempPrefix}_sync data_${Model}_sp ${tempPrefix}_sync_wisp
+  mv ${tempPrefix}_sync_wisp ${tempPrefix}_CL_sync
+
+  if [ "${is_vertical_level_identical}" == "1" ]; then
+    . ${SupportData}/func_novi_Common2Model
+  else
+    . ${SupportData}/func_vi_Common2Model
+  fi
+
+# ==================================================================
+# Applying Weighting
+# ==================================================================
+  data_UVT_org=${DIData}/${Model}/data_${Model}_UVT_org_${yy}-${mm}-${dd}-${ss}
+  fMap=${DIData}/${Model}/map_filter.nc
+  sMap=${DIData}/${Model}/map_filter_residual.nc
+  if [ ! -f ${fMap} ]; then
+    ${CDO} -mul -remapcon,${SupportData}/Model_griddes.txt ${fhome}/Weight_maps/map_Global_Weight.nc -remapcon,${SupportData}/Model_griddes.txt ${fhome}/DIM_${DI_Method}/Weight_map.nc ${fMap}
+    ${CDO} -abs -subc,1 ${fMap} ${sMap}
+  fi
+  
+  ${CDO} -mul ${fMap} -selvar,T,U,V ${tempPrefix}_ML_sync ${tempPrefix}_ML_sync_fm_TUV
+  ${CDO} -mul ${sMap} -selvar,T,U,V ${data_UVT_org} ${tempPrefix}_org_fm_TUV 
+  ${CDO} -add ${tempPrefix}_org_fm_TUV ${tempPrefix}_ML_sync_fm_TUV ${tempPrefix}_ML_sync_UVT
+# ==================================================================
+  ${CDO} -delete,name=T,U,V ${tempPrefix}_ML_sync ${tempPrefix}_ML_sync_no_TUV
+  ${CDO} -merge ${tempPrefix}_ML_sync_no_TUV ${tempPrefix}_ML_sync_UVT ${tempPrefix}_ML_sync_fm_full
+
+  mv ${tempPrefix}_ML_sync_fm_full ${DataIngestionData}
+
+  nModel=`echo "scale=0;(${nModel}+1)" | bc -l `
+  wait
+  sleep 0.1s
+  rm -f ${data_UVT_org}
+done
+
+
+wait
+#mv ${DataIngestionCommPool}/${tempPrefix}_interM ${DataIngestionData}
+rm -f ${DIData}/*/data_*_UVT_org_*
+rm -f ${DIData}/*/data_*_vihi
+rm -f ${DIData}/*/data_*_vi_*
+rm -f ${DIData}/*/${tempPrefix}*
+rm -f ${DataIngestionCommPool}/DI_interM_vi*_${yy}${mm}${dd}_${ss}
+echo "1" ${FlagsDir}/sync_data_ready
+
+rm -f ${FlagsDir}/*_sg_data_ready
+
+
+# here we remove data older than 2 ingestion time steps
+cd ${DataIngestionCommPool}
+ls -rt --color=none > ${DataIngestionCommPool}/../filelist_common
+nfile=`wc -l ${DataIngestionCommPool}/../filelist_common|awk -F " " '{print $1}' `
+dfile=`echo "scale=0;(${nModel}+2)" | bc -l `
+if [ ${nfile} -gt ${dfile} ]; then
+  files=`ls -rt --color=no `
+  for file in ${files}; do
+    if [ ! -d ${file} ]; then
+      dfile=`echo "scale=0;(${dfile}+1)" | bc -l `
+      [ ${nfile} -gt ${dfile} ] && rm ${file};
+    fi
+  done
+fi
+
+
+# here we remove data older than 2 ingestion time steps 
+for Model in ${Models}; do
+  # here we remove data older than 1 ingestion time steps
+  cd ${DataIngestionCommPool}/${Model}
+  ls -rt --color=none > ${DataIngestionCommPool}/../filelist_${Model}
+  nfile=`wc -l ${DataIngestionCommPool}/../filelist_${Model}|awk -F " " '{print $1}' `
+  if [ ${nfile} -gt 2 ]; then
+    dfile=2
+    files=`ls -rt --color=no `
+    for file in ${files}; do
+      dfile=`echo "scale=0;(${dfile}+1)" | bc -l `
+      if [ ${nfile} -gt ${dfile} ]; then rm ${file}; fi
+    done
+  fi
+done
+
+
+###############################################################################
+echo ${JobStartTime}
+echo `date`" || "${JobName}
+echo ${Line_Break}

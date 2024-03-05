@@ -1,0 +1,33 @@
+#! /bin/bash
+###############################################################################
+. ${fhome}/func_debug_Setting_$DebugLev
+JobStartTime=`date`; echo ${Line_Break}; echo ${Line_Break}
+JobName=func_Model_vertinterpolation 
+echo "Starting "${JobName}" ...... "
+###############################################################################
+
+for vname in ${vnames}; do
+  SevalStr='echo  temp = Datain-\>${S_'${vname}'_vname}  > func_read_nc_variable_S_'${vname}'.ncl'
+  TevalStr='echo  Ref'${vname}' = Rin-\>${T_'${vname}'_vname}  > func_read_nc_variable_T_'${vname}'.ncl'
+  eval ${SevalStr}; eval ${TevalStr}
+done
+
+
+ncl  \
+   TargetHybRefFilename=\"${TLHRname}\" \
+   HybRefFilename=\"${SHRname}\" \
+   SourceFilename=\"${SDname}\" \
+   TargetFilename=\"${TDname}\" \
+   TemplateFilename=\"${TLname}\" \
+   func_vertinterpolation.ncl
+
+
+LogZ="${SPN_dataDir}/${Model}_Zeros"
+echo "${DateTime} "`cat "${SPN_dataDir}/work/zeros_check.txt"` >> ${LogZ}
+
+#wait
+#sleep ${sleepS}s
+###############################################################################
+echo ${JobStartTime}
+echo `date`" || "${JobName}
+echo ${Line_Break}

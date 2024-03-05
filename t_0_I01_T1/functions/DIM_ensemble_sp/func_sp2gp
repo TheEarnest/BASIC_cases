@@ -1,0 +1,20 @@
+#! /bin/bash
+###############################################################################
+# ensemble info
+#------------------------------------------------------------------------------
+CN_res=42
+. ${fhome}/func_debug_Setting_$DebugLev
+cd ${DataIngestionCommPool}/../Data/${Model}/
+#sp_res=`ls --color=no *visp_res`
+gp_res=`ls --color=no *vigp_res`
+
+#${CDO} -sp2sp,${CN_res} ${DataIngestionModelData} ${tempPrefix}_CL_sync_visp
+#${CDO} -add ${tempPrefix}_sync_visp ${sp_res} ${tempPrefix}_sync_sp
+#${CDO} -remapcon,${SupportData}/Model_griddes.txt -sp2gp -dv2uv ${tempPrefix}_CL_sync_visp ${tempPrefix}_CL_sync_tuvlsp_gp
+${CDO} -remapcon,${SupportData}/Model_griddes.txt -sp2gp -dv2uv -sp2sp,${CN_res} ${DataIngestionModelData} ${tempPrefix}_CL_sync_tuvlsp_gp
+${CDO} -add ${data_vi}_tuv_vigp_res -delete,name=sp ${tempPrefix}_CL_sync_tuvlsp_gp ${tempPrefix}_CL_sync_tuv_gp
+${CDO} -merge ${tempPrefix}_CL_sync_tuv_gp ${data_vi}_CL_no_tuv ${tempPrefix}_CL_sync_gp
+
+###############################################################################
+echo `date`" || "${JobName}
+echo ${Line_Break}

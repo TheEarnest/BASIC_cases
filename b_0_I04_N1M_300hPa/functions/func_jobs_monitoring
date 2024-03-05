@@ -1,0 +1,79 @@
+#! /bin/bash
+###############################################################################
+# ensemble info
+#------------------------------------------------------------------------------
+. ${fhome}/func_debug_Setting_${DebugLev}
+#
+JobStartTime=`date`; echo ${Line_Break}; echo ${Line_Break}
+JobName=func_jobs_monitoring
+# 
+echo "Starting "${JobName}" ...... "
+###############################################################################
+if [ "${is_job_launched}" == "0" ]; then
+  # check if all models are ready for lauching 
+  is_ready_for_launch=1
+  for Model in ${Models}; do
+    is_Model_ready=${DIData}/../Flags/is_${Model}_ready
+    if [ ! -f ${is_Model_ready} ]; then
+      is_ready_for_launch=0
+    fi
+  done
+  if [ "${is_ready_for_launch}" == "1" ]; then
+    TotalCPUcores=0
+    for Model in ${Models}; do 
+      envConfigFilePath=${supported_models}/${Model}; . ${fhome}/func_getenvxmlValue
+      CPU4model=`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "CPU cores"`
+      TotalCPUcores=`echo "scale=0;(${TotalCPUcores}+${CPU4model})" | bc -l ` 
+    done
+    TotalCPUnodes=`echo "scale=0;(${TotalCPUcores}/${CPU_cores2nodes})"| bc -l `
+    RequestCPUcores=`echo "scale=0;(${TotalCPUnodes}*${CPU_cores2nodes})" | bc -l `
+    if [ "${TotalCPUcores}" != "${RequestCPUcores}" ]; then
+      TotalCPUnodes=`echo "scale=0;(${TotalCPUnodes}+1)"| bc -l `; fi 
+    [ ${TotalCPUnodes} -le 4 ] && TotalCPUnodes=4
+    cd ${DataIngestionBCK}/../../cases
+    rsync --copy-links --files-from=${fhome}/rsync2localwork_list ${scripthome}/ . 
+    # updating script 
+    sed -i s/"#SBATCH --account".*/"#SBATCH --account=${CPU_account}"/g  functions/func_launch_Models
+    sed -i s/"#SBATCH --job-name".*/"#SBATCH --job-name=${CasePrefix}"/g  functions/func_launch_Models
+    sed -i s/"#SBATCH --output=".*/"#SBATCH --output=r_${CasePrefix}_out_%j"/g  functions/func_launch_Models
+    sed -i s/"#SBATCH --error=".*/"#SBATCH --error=r_${CasePrefix}_err_%j"/g  functions/func_launch_Models
+    sed -i s/"#SBATCH --time=".*/"#SBATCH --time=0-12:29:0"/g  functions/func_launch_Models
+    sed -i s/"#SBATCH --mail-user=".*/"#SBATCH --mail-user=${User_mail}"/g  functions/func_launch_Models
+   sed -i s/"#SBATCH --nodes=".*/"#SBATCH --nodes=${TotalCPUnodes} --ntasks-per-node=${CPU_cores2nodes}"/g  functions/func_launch_Models
+
+    # update the path 
+    sedStr=`echo scripthome=\'${DataIngestionBCK}/../../cases\' |sed 's/\//\\\\\//g' `
+    sed -i s/"scripthome=".*/"${sedStr}"/g  functions/func_launch_Models
+
+    sedStr=`echo exphome=\'${DataIngestionBCK}/../../cases\' |sed 's/\//\\\\\//g' `
+    sed -i s/"exphome=".*/"${sedStr}"/g  functions/func_launch_Models
+    ${qsub} functions/func_launch_Models
+    #. functions/func_launch_Models
+    is_job_launched=1
+  fi
+fi
+if [ "${is_debuging}" == "1" ]; then
+  #MS 
+  ModelsDe=${Models}
+  #Models="CAM4 "
+  #MS
+  for Model in ${Models}; do
+    echo ${Line_Break}
+    echo "${Model} ${Model} ${Model} ${Model} ${Model} ${Model} ${Model} ... "
+    alias tail='/usr/bin/tail -c 115 '
+    tail ${DIData}/../Logs/${t_prefix}_${Model}_logs
+   # echo ${Line_Break}
+   # tail ${DIData}/../Logs/${t_prefix}_${Model}_errs
+   # echo ${Line_Break}
+    echo ${Line_Break}
+  done
+  #MS
+  Models=${ModelsDe}
+  #MS
+fi
+###############################################################################
+#echo ${JobStartTime}
+#echo `date`" || "${JobName}
+#echo ${Line_Break}
+
+. ${fhome}/func_debug_Setting_$DebugLev

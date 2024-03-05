@@ -1,0 +1,2 @@
+#! /bin/bash
+ln -sf ${FlagBase} ${FlagsDir}/${Model}_sg_data_ready

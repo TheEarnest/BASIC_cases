@@ -1,0 +1,43 @@
+#! /bin/bash
+###############################################################################
+# Monitoring 
+#------------------------------------------------------------------------------
+. ${fhome}/func_debug_Setting_$DebugLev
+#
+JobStartTime=`date`; echo ${Line_Break}; echo ${Line_Break}
+JobName=func_${DI_Method}_DataIngestion_monitoring 
+# 
+echo "Starting "${JobName}" ...... "
+. ${fhome}/../localized_settings/func_load_module_${HPC}
+is_job_monitoring_SPN=${DIData}/../Flags/SPN_monitoring$$
+###############################################################################
+
+#Date_time=${New_Date_time};
+Date_time=${Date_time_ini}
+echo "Data ingestion monitoring starts ..." > ${is_job_monitoring_SPN}
+if [ ! -f ${DIData}/CommonData_template.nc  ]; then
+  cp ${fhome}/CommonData_template.nc.gz ${DIData}
+  cd ${DIData}; gzip -d CommonData_template.nc.gz
+fi
+WaitingCounter=0
+while [ -f ${is_job_monitoring_SPN}  -a ${WaitingCounter} -lt ${MaxSleepCounter} ]; do
+  WaitingCounter=`echo "scale=0;(${WaitingCounter}+1)" | bc -l `
+  DateTime=${Date_time}; . ${fhome}/func_split_datetime
+  . ${fhome}/DIM_${DI_Method}/func_evaluating_and_learning
+
+  . ${fhome}/DIM_${DI_Method}/func_DataIngestion_preparing
+
+  . ${fhome}/DIM_${DI_Method}/func_DataIngestion_sync_fetched 
+
+  DateTimeStr=`${fhome}/func_defdate.py ${yy} ${mm} ${dd} ${ss} ${DataIngestion_dt} `
+  . ${fhome}/func_split_python_datetime
+  New_Date_time=${ny}-${nm}-${nd}-${ns}
+
+
+  sleep ${sleepS}s
+  Date_time=${New_Date_time}
+done
+###############################################################################
+echo ${JobStartTime}
+echo `date`" || "${JobName}
+echo ${Line_Break}

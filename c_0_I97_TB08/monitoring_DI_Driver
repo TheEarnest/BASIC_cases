@@ -1,0 +1,45 @@
+#! /bin/bash 
+export LANG=en_US.UTF-8
+set +ex
+# -----------------------------------------------------
+# Basic setting
+# -----------------------------------------------------
+export scripthome=`pwd`
+export fhome=${scripthome}/functions
+export t_prefix=t_SPN$$
+export EnvCongFile=env_configure.xml
+. ${fhome}/func_getGlobalSettings
+# -----------------------------------------------------
+# Common configurations
+set -ex
+
+for year in `seq -w 1994 2010`; do 
+
+  # modify def. in DI_driver & NorESM1
+  echo ${year}
+  envConfigFilePath=functions; . ${fhome}/func_change_envxmlValue
+  func_change_envxmlValue "//global-parameters/param" "Model start date" "${year}-10-15"
+  func_change_envxmlValue "//global-parameters/param" "Model Run cycle" "6"  
+
+  Model=NorESM1
+  envConfigFilePath=${supported_models}/${Model}; . ${fhome}/func_change_envxmlValue
+  func_change_envxmlValue "//model-parameters/param" "Reference date" "${year}-10-15"
+  . ${fhome}/func_getModelSettings  
+
+  if [ ! -z ${Model_work_dir} ]; then
+    cd ${Model_work_dir}
+    rm -f ${CaseName}.*
+    rm -f ${Model_ref_case}.*
+    rm -f rpointer.*
+  fi
+
+  cd ${scripthome}
+
+  ./DI_Driver
+
+
+  sleep 10s; ./cleaning_all_Drivers
+  sleep 10s; ./cleaning_all_Drivers
+
+done
+exit 0

@@ -1,0 +1,61 @@
+#! /bin/bash 
+export LANG=en_US.UTF-8
+set +ex
+# -----------------------------------------------------
+# Basic setting
+# -----------------------------------------------------
+export scripthome=`pwd`
+export fhome=${scripthome}/functions
+export t_prefix=t_SPN$$
+export EnvCongFile=env_configure.xml
+. ${fhome}/func_getGlobalSettings
+# -----------------------------------------------------
+# Common configurations
+set -ex
+#years="1989 "
+
+for year in `seq -w 2008 2010`; do 
+#for year in ${years}; do
+  # modify def. in DI_driver & NorESM1
+  echo ${year}
+  envConfigFilePath=functions; . ${fhome}/func_change_envxmlValue
+  func_change_envxmlValue "//global-parameters/param" "Model start date" "${year}-10-15"
+  func_change_envxmlValue "//global-parameters/param" "Model Run cycle" "6"  
+
+  Model=NorESM1
+  envConfigFilePath=${supported_models}/${Model}; . ${fhome}/func_change_envxmlValue
+  func_change_envxmlValue "//model-parameters/param" "Reference date" "${year}-10-15"
+  . ${fhome}/func_getModelSettings  
+
+  RunCycleCheckFile="${Model_work_dir}/../../RunCycle_is_zero"
+  rm -f ${RunCycleCheckFile}
+
+  if [ ! -z ${Model_work_dir} ]; then
+    cd ${Model_work_dir}
+    rm -f ${CaseName}.*
+    rm -f ${Model_ref_case}.*
+    rm -f rpointer.*
+    rm -f *.bldlog.23*
+  fi
+
+  cd ${scripthome}
+
+  ./DI_Driver &
+
+
+  RunCycleCheckFile="${Model_work_dir}/../../RunCycle_is_zero"
+  while [ ! -f ${RunCycleCheckFile} ]; do
+    echo ${Line_Break}
+    echo "Model is running ... "`date`" || "${JobName}
+    echo ${Line_Break}
+
+    sleep 60s
+
+  done
+
+  sleep 30s; ./cleaning_all_Drivers
+  sleep 30s; ./cleaning_all_Drivers
+  sleep 30s; ./cleaning_all_Drivers
+
+done
+exit 0

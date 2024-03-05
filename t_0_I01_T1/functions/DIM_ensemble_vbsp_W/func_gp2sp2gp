@@ -1,0 +1,55 @@
+#! /bin/bash
+###############################################################################
+# ensemble info
+#------------------------------------------------------------------------------
+. ${fhome}/func_debug_Setting_$DebugLev
+
+cd ${DataIngestionCommPool}/../Data/${Model}
+mv ${DIData}/${Model}/work/${tempPrefix}_ML_sync ${tempPrefix}_ML_sync_gp_${Ssp_res}
+
+data_org=${DataIngestionCommPool}/../Data/${Model}/data_${Model}_org_${yy}-${mm}-${dd}-${ss}
+
+${CDO} -selvar,T,U,V ${data_org} ${tempPrefix}_ML_TUV
+${CDO} -delete,name=T,U,V ${data_org} ${tempPrefix}_ML_no_TUV
+${CDO} -gp2sp -uv2dv -remapcon,t${Csp_res}grid ${tempPrefix}_ML_TUV ${tempPrefix}_ML_sp_${Csp_res}
+
+if [ ${S0sp_res} -ge 0 ]; then
+  ${CDO} -sp2sp,${Ssp_res} -sp2sp,${S0sp_res} ${tempPrefix}_ML_sp_${Csp_res} ${tempPrefix}_ML_sp_${S0sp_res}
+fi
+${CDO} -sp2sp,${Ssp_res} ${tempPrefix}_ML_sp_${Csp_res} ${tempPrefix}_ML_sp_${Ssp_res}
+if [ ${S0sp_res} -ge 0 ]; then
+  ${CDO} -sub ${tempPrefix}_ML_sp_${Ssp_res} ${tempPrefix}_ML_sp_${S0sp_res} ${tempPrefix}_ML_sp_${S0sp_res}-${Ssp_res}
+else
+  ln -sf ${tempPrefix}_ML_sp_${Ssp_res} ${tempPrefix}_ML_sp_${S0sp_res}-${Ssp_res}
+fi
+#${CDO} -sp2sp,${Csp_res} ${tempPrefix}_ML_sp_${Ssp_res} ${tempPrefix}_ML_sp_${Csp_res}
+${CDO} -remapcon,${SupportData}/Model_griddes.txt -sp2gp -dv2uv -sp2sp,${Csp_res} ${tempPrefix}_ML_sp_${S0sp_res}-${Ssp_res} ${tempPrefix}_ML_gp_${S0sp_res}-${Ssp_res}
+${CDO} -sub ${tempPrefix}_ML_TUV ${tempPrefix}_ML_gp_${S0sp_res}-${Ssp_res} ${tempPrefix}_ML_gp_TUV_res
+
+
+${CDO} -selvar,T,U,V ${tempPrefix}_ML_sync_gp_${Ssp_res} ${tempPrefix}_ML_sync_TUV
+${CDO} -sp2sp,${Ssp_res} -gp2sp -uv2dv -remapcon,t${Csp_res}grid ${tempPrefix}_ML_sync_TUV ${tempPrefix}_ML_sync_sp_${Ssp_res}
+${CDO} -remapcon,${SupportData}/Model_griddes.txt -sp2gp -dv2uv -sp2sp,${Csp_res} ${tempPrefix}_ML_sync_sp_${Ssp_res} ${tempPrefix}_ML_sync_gp_${Ssp_res}uv
+${CDO} -chname,u,U,v,V ${tempPrefix}_ML_sync_gp_${Ssp_res}uv ${tempPrefix}_ML_sync_gp_${Ssp_res}
+${CDO} -enssum ${tempPrefix}_ML_sync_gp_${Ssp_res} ${tempPrefix}_ML_gp_TUV_res ${tempPrefix}_ML_sync_merged
+
+# ==================================================================
+# Applying Weighting
+# ==================================================================
+data_UVT_org=${DIData}/${Model}/data_${Model}_UVT_org_${yy}-${mm}-${dd}-${ss}
+fMap=${DIData}/${Model}/map_filter.nc
+sMap=${DIData}/${Model}/map_filter_residual.nc
+if [ ! -f ${fMap} ]; then
+  ${CDO} -mul -remapcon,${SupportData}/Model_griddes.txt ${fhome}/Weight_maps/map_Global_Weight.nc -remapcon,${SupportData}/Model_griddes.txt ${fhome}/DIM_${DI_Method}/Weight_map.nc ${fMap}
+  ${CDO} -abs -subc,1 ${fMap} ${sMap}
+fi
+
+${CDO} -mul ${fMap} ${tempPrefix}_ML_sync_gp_${Ssp_res} ${tempPrefix}_ML_sync_fm_TUV
+${CDO} -mul ${sMap} -selvar,T,U,V ${data_org} ${tempPrefix}_org_fm_TUV
+${CDO} -add ${tempPrefix}_org_fm_TUV ${tempPrefix}_ML_sync_fm_TUV ${tempPrefix}_ML_sync_UVT
+
+${CDO} -merge ${tempPrefix}_ML_sync_UVT ${tempPrefix}_ML_no_TUV ${tempPrefix}_gp2sp2gp
+
+rm -f ${data_org}
+###############################################################################
+echo ${Line_Break}

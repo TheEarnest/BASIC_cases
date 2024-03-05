@@ -1,0 +1,469 @@
++ set -ex
++ envConfigFilePath=functions
++ . /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/functions/func_change_envxmlValue
++ func_change_envxmlValue //global-parameters/param 'Model start date' 1992-10-15
++ '[' '!' -f /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/functions/env_configure.xml ']'
++ node=//global-parameters/param
++ name='Model start date'
++ value=1992-10-15
++ echo -e 'cd //global-parameters/param[@name="Model start date"]/@value\nset 1992-10-15\nsave'
++ xmllint --shell /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/functions/env_configure.xml
++ eval
++ echo 1992-10-15
+++ seq -w 1992 1992
++ for year in '`seq -w 1992 1992`'
++ echo 1992
++ envConfigFilePath=functions
++ . /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/functions/func_change_envxmlValue
++ func_change_envxmlValue //global-parameters/param 'Model start date' 1992-10-15
++ '[' '!' -f /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/functions/env_configure.xml ']'
++ node=//global-parameters/param
++ name='Model start date'
++ value=1992-10-15
++ echo -e 'cd //global-parameters/param[@name="Model start date"]/@value\nset 1992-10-15\nsave'
++ xmllint --shell /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/functions/env_configure.xml
++ eval
++ echo 1992-10-15
++ func_change_envxmlValue //global-parameters/param 'Model Run cycle' 6
++ '[' '!' -f /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/functions/env_configure.xml ']'
++ node=//global-parameters/param
++ name='Model Run cycle'
++ value=6
++ echo -e 'cd //global-parameters/param[@name="Model Run cycle"]/@value\nset 6\nsave'
++ xmllint --shell /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/functions/env_configure.xml
++ eval
++ echo 6
++ Model=NorESM1
++ envConfigFilePath=supported_models/NorESM1
++ . /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/functions/func_getenvxmlValue
++ func_change_envxmlValue //model-parameters 'Reference date' 1992-10-15
++ '[' '!' -f /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/NorESM1/env_configure.xml ']'
++ node=//model-parameters
++ name='Reference date'
++ value=1992-10-15
++ echo -e 'cd //model-parameters[@name="Reference date"]/@value\nset 1992-10-15\nsave'
++ xmllint --shell /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/NorESM1/env_configure.xml
+//model-parameters[@name="Reference date"]/@value is an empty Node Set
+Entity: line 1: parser error : internal error: detected an error in element content
+
+1992-10-15
+^
++ eval
++ echo 1992-10-15
++ ./cleaning_all_Drivers
++ export FlagsDir=/tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Data/../Flags
++ FlagsDir=/tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Data/../Flags
++ . /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/functions/func_check_pathes
+++ . /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/functions/func_debug_Setting_3
++++ set -ex
+++ '[' '!' -z /tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Data ']'
+++ '[' -d /tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Data ']'
+++ rm -rf /tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Data/../Data /tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Data/../filelist_common /tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Data/../filelist_ERAI-f19L26 /tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Data/../filelist_NorESM1 /tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Data/../Flags /tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Data/../Logs /tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Data/../Pool
+++ mkdir -p /tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Data
+++ '[' '!' -d /cluster/work/users/earnest/stercp_exp//b_0_I02_N1M_300hPa/cases ']'
+++ mkdir -p /cluster/work/users/earnest/stercp_exp//b_0_I02_N1M_300hPa/cases
+++ '[' '!' -d /cluster/work/users/earnest/stercp_exp/b_0_I02_N1M_300hPa ']'
+++ '[' '!' -d /tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Data/../Flags ']'
+++ '[' '!' -d /tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Data/../Logs ']'
+++ '[' '!' -d /cluster/work/users/earnest/stercp_exp/b_0_I02_N1M_300hPa/DataIngestion_sp/Data/Logs ']'
+++ mkdir -p /cluster/work/users/earnest/stercp_exp/b_0_I02_N1M_300hPa/DataIngestion_sp/Data/Logs
+++ '[' '!' -d /tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Pool ']'
+++ '[' TRUE == TRUE ']'
+++ '[' '!' -d /cluster/work/users/earnest/stercp_exp/b_0_I02_N1M_300hPa/DataIngestion_sp/Data ']'
+++ for Model in '${Models}'
+++ '[' '!' -d /tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Pool/NorESM1 ']'
+++ for Model in '${Models}'
+++ '[' '!' -d /tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Pool/ERAI-f19L26 ']'
+++ '[' '!' -d /tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Pool/../Logs ']'
+++ '[' '!' -d /tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Pool/../Data ']'
+++ rm -f /tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Data/../Flags/BaseFlag
+++ rm -f '/tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Data/../Logs/*'
+++ rm -f /tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Data/../Pool/ERAI-f19L26 /tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Data/../Pool/NorESM1
+rm: cannot remove ‘/tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Data/../Pool/ERAI-f19L26’: Is a directory
+rm: cannot remove ‘/tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Data/../Pool/NorESM1’: Is a directory
+++ echo 'Pool data are cleared.'
+++ rm -f '/tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Data/../Pool/*/*'
+++ export FlagBase=/tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Data/../Flags/BaseFlag
+++ FlagBase=/tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Data/../Flags/BaseFlag
+++ echo 1
++ '[' '!' -z /tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Data ']'
++ rm -rf '/tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Data/*'
++ echo '/tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Data is clean for a new run.'
++ yy='????'
++ mm='??'
++ dd='??'
++ ss='?????'
++ for Model in '${Models}'
++ export Model=NorESM1
++ Model=NorESM1
++ . /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/functions/func_getModelSettings
+++ set -x
+++ ulimit -s unlimited
+++ envConfigFilePath=supported_models/NorESM1
+++ . /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/functions/func_getenvxmlValue
+++ export SupportData=/cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/NorESM1
+++ SupportData=/cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/NorESM1
+++ export SPN_dataDir=/tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Data/NorESM1
+++ SPN_dataDir=/tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Data/NorESM1
+++ export 'BCK_dataDir=/cluster/work/users/earnest/stercp_exp/b_0_I02_N1M_300hPa/DataIngestion_sp/Data/NorESM1/????'
+++ BCK_dataDir='/cluster/work/users/earnest/stercp_exp/b_0_I02_N1M_300hPa/DataIngestion_sp/Data/NorESM1/????'
+++ is_job_monitoring_Model=/tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Data/../Flags/NorESM1_monitoring87947
++++ func_getenvxmlValue '//model-parameters[@name="NorESM1"]/param' 'Case Name'
++++ '[' '!' -f /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/NorESM1/env_configure.xml ']'
++++ node='//model-parameters[@name="NorESM1"]/param'
++++ name='Case Name'
+++++ echo 'cat //model-parameters[@name="NorESM1"]/param[@name="Case Name"]/@value'
+++++ xmllint --shell /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/NorESM1/env_configure.xml
+++++ grep -v '>'
++++ evalStr=' value="${Model}_${CasePrefix}"'
++++ eval 'value="${Model}_${CasePrefix}"'
+++++ value=NorESM1_b_0_I02_N1M_300hPa
++++ echo NorESM1_b_0_I02_N1M_300hPa
+++ CaseName=NorESM1_b_0_I02_N1M_300hPa
++++ func_getenvxmlValue '//model-parameters[@name="NorESM1"]/param' 'Rebuild model'
++++ '[' '!' -f /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/NorESM1/env_configure.xml ']'
++++ node='//model-parameters[@name="NorESM1"]/param'
++++ name='Rebuild model'
+++++ echo 'cat //model-parameters[@name="NorESM1"]/param[@name="Rebuild model"]/@value'
+++++ xmllint --shell /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/NorESM1/env_configure.xml
+++++ grep -v '>'
++++ evalStr=' value="FALSE"'
++++ eval 'value="FALSE"'
+++++ value=FALSE
++++ echo FALSE
+++ is_rebuild_Model=FALSE
++++ func_getenvxmlValue '//model-parameters[@name="NorESM1"]/param' type
++++ '[' '!' -f /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/NorESM1/env_configure.xml ']'
++++ node='//model-parameters[@name="NorESM1"]/param'
++++ name=type
+++++ echo 'cat //model-parameters[@name="NorESM1"]/param[@name="type"]/@value'
+++++ xmllint --shell /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/NorESM1/env_configure.xml
+++++ grep -v '>'
++++ evalStr=' value="couple"'
++++ eval 'value="couple"'
+++++ value=couple
++++ echo couple
+++ model_type=couple
++++ func_getenvxmlValue '//model-parameters[@name="NorESM1"]/param' 'CPU cores'
++++ '[' '!' -f /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/NorESM1/env_configure.xml ']'
++++ node='//model-parameters[@name="NorESM1"]/param'
++++ name='CPU cores'
+++++ echo 'cat //model-parameters[@name="NorESM1"]/param[@name="CPU cores"]/@value'
+++++ xmllint --shell /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/NorESM1/env_configure.xml
+++++ grep -v '>'
++++ evalStr=' value="373"'
++++ eval 'value="373"'
+++++ value=373
++++ echo 373
+++ Model_CPU_req=373
++++ func_getenvxmlValue '//model-parameters[@name="NorESM1"]/param' 'script base'
++++ '[' '!' -f /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/NorESM1/env_configure.xml ']'
++++ node='//model-parameters[@name="NorESM1"]/param'
++++ name='script base'
+++++ echo 'cat //model-parameters[@name="NorESM1"]/param[@name="script base"]/@value'
+++++ xmllint --shell /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/NorESM1/env_configure.xml
+++++ grep -v '>'
++++ evalStr=' value="${Shome}"'
++++ eval 'value="${Shome}"'
+++++ value=/cluster/work/users/earnest/stercp_exp//b_0_I02_N1M_300hPa/cases
++++ echo /cluster/work/users/earnest/stercp_exp//b_0_I02_N1M_300hPa/cases
+++ Model_script_base=/cluster/work/users/earnest/stercp_exp//b_0_I02_N1M_300hPa/cases
++++ func_getenvxmlValue '//model-parameters[@name="NorESM1"]/param' 'work dir'
++++ '[' '!' -f /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/NorESM1/env_configure.xml ']'
++++ node='//model-parameters[@name="NorESM1"]/param'
++++ name='work dir'
+++++ echo 'cat //model-parameters[@name="NorESM1"]/param[@name="work dir"]/@value'
+++++ xmllint --shell /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/NorESM1/env_configure.xml
+++++ grep -v '>'
++++ evalStr=' value="${Swork}/${CaseName}/run"'
++++ eval 'value="${Swork}/${CaseName}/run"'
+++++ value=/cluster/work/users/earnest/stercp_exp/b_0_I02_N1M_300hPa/NorESM1_b_0_I02_N1M_300hPa/run
++++ echo /cluster/work/users/earnest/stercp_exp/b_0_I02_N1M_300hPa/NorESM1_b_0_I02_N1M_300hPa/run
+++ Model_work_dir=/cluster/work/users/earnest/stercp_exp/b_0_I02_N1M_300hPa/NorESM1_b_0_I02_N1M_300hPa/run
++++ func_getenvxmlValue '//model-parameters[@name="NorESM1"]/param' 'Reference case'
++++ '[' '!' -f /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/NorESM1/env_configure.xml ']'
++++ node='//model-parameters[@name="NorESM1"]/param'
++++ name='Reference case'
+++++ echo 'cat //model-parameters[@name="NorESM1"]/param[@name="Reference case"]/@value'
+++++ xmllint --shell /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/NorESM1/env_configure.xml
+++++ grep -v '>'
++++ evalStr=' value="ana_19800115_me_mem01"'
++++ eval 'value="ana_19800115_me_mem01"'
+++++ value=ana_19800115_me_mem01
++++ echo ana_19800115_me_mem01
+++ Model_ref_case=ana_19800115_me_mem01
++++ func_getenvxmlValue '//model-parameters[@name="NorESM1"]/param' 'Reference date'
++++ '[' '!' -f /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/NorESM1/env_configure.xml ']'
++++ node='//model-parameters[@name="NorESM1"]/param'
++++ name='Reference date'
+++++ echo 'cat //model-parameters[@name="NorESM1"]/param[@name="Reference date"]/@value'
+++++ xmllint --shell /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/NorESM1/env_configure.xml
+++++ grep -v '>'
++++ evalStr=' value="1991-10-15"'
++++ eval 'value="1991-10-15"'
+++++ value=1991-10-15
++++ echo 1991-10-15
+++ Model_ref_date=1991-10-15
++++ func_getenvxmlValue '//model-parameters[@name="NorESM1"]/param' 'one timestep ingestion data template'
++++ '[' '!' -f /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/NorESM1/env_configure.xml ']'
++++ node='//model-parameters[@name="NorESM1"]/param'
++++ name='one timestep ingestion data template'
+++++ echo 'cat //model-parameters[@name="NorESM1"]/param[@name="one timestep ingestion data template"]/@value'
+++++ xmllint --shell /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/NorESM1/env_configure.xml
+++++ grep -v '>'
++++ evalStr=' value="Model_template.nc"'
++++ eval 'value="Model_template.nc"'
+++++ value=Model_template.nc
++++ echo Model_template.nc
+++ Model_1step_template=Model_template.nc
++++ func_getenvxmlValue '//model-parameters[@name="NorESM1"]/param' 'restart name'
++++ '[' '!' -f /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/NorESM1/env_configure.xml ']'
++++ node='//model-parameters[@name="NorESM1"]/param'
++++ name='restart name'
+++++ echo 'cat //model-parameters[@name="NorESM1"]/param[@name="restart name"]/@value'
+++++ xmllint --shell /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/NorESM1/env_configure.xml
+++++ grep -v '>'
++++ evalStr=' value="${CaseName}.cam2.r.${yy}-${mm}-${dd}-${ss}.nc"'
++++ eval 'value="${CaseName}.cam2.r.${yy}-${mm}-${dd}-${ss}.nc"'
+++++ value='NorESM1_b_0_I02_N1M_300hPa.cam2.r.????-??-??-?????.nc'
++++ echo 'NorESM1_b_0_I02_N1M_300hPa.cam2.r.????-??-??-?????.nc'
+++ Model_restart_file='NorESM1_b_0_I02_N1M_300hPa.cam2.r.????-??-??-?????.nc'
++++ func_getenvxmlValue '//model-parameters[@name="NorESM1"]/param' 'spectral resolution'
++++ '[' '!' -f /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/NorESM1/env_configure.xml ']'
++++ node='//model-parameters[@name="NorESM1"]/param'
++++ name='spectral resolution'
+++++ echo 'cat //model-parameters[@name="NorESM1"]/param[@name="spectral resolution"]/@value'
+++++ xmllint --shell /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/NorESM1/env_configure.xml
+++++ grep -v '>'
++++ evalStr=' value="63"'
++++ eval 'value="63"'
+++++ value=63
++++ echo 63
+++ export SPG_RES=63
+++ SPG_RES=63
+++ Date_time_ini=
++++ func_getenvxmlValue '//model-parameters[@name="NorESM1"]/param' 'time step'
++++ '[' '!' -f /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/NorESM1/env_configure.xml ']'
++++ node='//model-parameters[@name="NorESM1"]/param'
++++ name='time step'
+++++ echo 'cat //model-parameters[@name="NorESM1"]/param[@name="time step"]/@value'
+++++ xmllint --shell /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/NorESM1/env_configure.xml
+++++ grep -v '>'
++++ evalStr=' value="1800"'
++++ eval 'value="1800"'
+++++ value=1800
++++ echo 1800
+++ modeldtime=1800
++++ echo 'scale=7;(21600/3600.0/12)'
++++ bc -l
+++ met_rlx=.5000000
++++ du /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/NorESM1/Model_template.nc
++++ awk -F ' ' '{print $1}'
+++ BaseSize=5900
++++ echo 'scale=0;(5900*0.87)/1.0'
++++ bc -l
+++ BaseSize87=5133
+++ . /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/functions/func_debug_Setting_3
++++ set -ex
++ '[' '!' -z /cluster/work/users/earnest/stercp_exp/b_0_I02_N1M_300hPa/NorESM1_b_0_I02_N1M_300hPa/run ']'
+++ func_getenvxmlValue '//model-parameters[@name="NorESM1"]/param' 'output name'
+++ '[' '!' -f /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/NorESM1/env_configure.xml ']'
+++ node='//model-parameters[@name="NorESM1"]/param'
+++ name='output name'
++++ echo 'cat //model-parameters[@name="NorESM1"]/param[@name="output name"]/@value'
++++ xmllint --shell /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/NorESM1/env_configure.xml
++++ grep -v '>'
+++ evalStr=' value="${CaseName}.cam2.h1.${yy}-${mm}-${dd}-${ss}.nc"'
+++ eval 'value="${CaseName}.cam2.h1.${yy}-${mm}-${dd}-${ss}.nc"'
++++ value='NorESM1_b_0_I02_N1M_300hPa.cam2.h1.????-??-??-?????.nc'
+++ echo 'NorESM1_b_0_I02_N1M_300hPa.cam2.h1.????-??-??-?????.nc'
++ modelout='/cluster/work/users/earnest/stercp_exp/b_0_I02_N1M_300hPa/NorESM1_b_0_I02_N1M_300hPa/run/NorESM1_b_0_I02_N1M_300hPa.cam2.h1.????-??-??-?????.nc'
++ rm -f '/cluster/work/users/earnest/stercp_exp/b_0_I02_N1M_300hPa/NorESM1_b_0_I02_N1M_300hPa/run/NorESM1_b_0_I02_N1M_300hPa.cam2.h1.????-??-??-?????.nc'
++ for Model in '${Models}'
++ export Model=ERAI-f19L26
++ Model=ERAI-f19L26
++ . /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/functions/func_getModelSettings
+++ set -x
+++ ulimit -s unlimited
+++ envConfigFilePath=supported_models/ERAI-f19L26
+++ . /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/functions/func_getenvxmlValue
+++ export SupportData=/cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/ERAI-f19L26
+++ SupportData=/cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/ERAI-f19L26
+++ export SPN_dataDir=/tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Data/ERAI-f19L26
+++ SPN_dataDir=/tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Data/ERAI-f19L26
+++ export 'BCK_dataDir=/cluster/work/users/earnest/stercp_exp/b_0_I02_N1M_300hPa/DataIngestion_sp/Data/ERAI-f19L26/????'
+++ BCK_dataDir='/cluster/work/users/earnest/stercp_exp/b_0_I02_N1M_300hPa/DataIngestion_sp/Data/ERAI-f19L26/????'
+++ is_job_monitoring_Model=/tmp/STERCP_Shen/DataIngestion_sp/b_0_I02_N1M_300hPa/Data/../Flags/ERAI-f19L26_monitoring87947
++++ func_getenvxmlValue '//model-parameters[@name="ERAI-f19L26"]/param' 'Case Name'
++++ '[' '!' -f /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/ERAI-f19L26/env_configure.xml ']'
++++ node='//model-parameters[@name="ERAI-f19L26"]/param'
++++ name='Case Name'
+++++ echo 'cat //model-parameters[@name="ERAI-f19L26"]/param[@name="Case Name"]/@value'
+++++ xmllint --shell /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/ERAI-f19L26/env_configure.xml
+++++ grep -v '>'
++++ evalStr=' value="${Model}_${CasePrefix}"'
++++ eval 'value="${Model}_${CasePrefix}"'
+++++ value=ERAI-f19L26_b_0_I02_N1M_300hPa
++++ echo ERAI-f19L26_b_0_I02_N1M_300hPa
+++ CaseName=ERAI-f19L26_b_0_I02_N1M_300hPa
++++ func_getenvxmlValue '//model-parameters[@name="ERAI-f19L26"]/param' 'Rebuild model'
++++ '[' '!' -f /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/ERAI-f19L26/env_configure.xml ']'
++++ node='//model-parameters[@name="ERAI-f19L26"]/param'
++++ name='Rebuild model'
+++++ echo 'cat //model-parameters[@name="ERAI-f19L26"]/param[@name="Rebuild model"]/@value'
+++++ xmllint --shell /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/ERAI-f19L26/env_configure.xml
+++++ grep -v '>'
++++ evalStr=' value="FALSE"'
++++ eval 'value="FALSE"'
+++++ value=FALSE
++++ echo FALSE
+++ is_rebuild_Model=FALSE
++++ func_getenvxmlValue '//model-parameters[@name="ERAI-f19L26"]/param' type
++++ '[' '!' -f /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/ERAI-f19L26/env_configure.xml ']'
++++ node='//model-parameters[@name="ERAI-f19L26"]/param'
++++ name=type
+++++ echo 'cat //model-parameters[@name="ERAI-f19L26"]/param[@name="type"]/@value'
+++++ xmllint --shell /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/ERAI-f19L26/env_configure.xml
+++++ grep -v '>'
++++ evalStr=
++++ eval
++++ echo
+++ model_type=
++++ func_getenvxmlValue '//model-parameters[@name="ERAI-f19L26"]/param' 'CPU cores'
++++ '[' '!' -f /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/ERAI-f19L26/env_configure.xml ']'
++++ node='//model-parameters[@name="ERAI-f19L26"]/param'
++++ name='CPU cores'
+++++ echo 'cat //model-parameters[@name="ERAI-f19L26"]/param[@name="CPU cores"]/@value'
+++++ xmllint --shell /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/ERAI-f19L26/env_configure.xml
+++++ grep -v '>'
++++ evalStr=' value="0"'
++++ eval 'value="0"'
+++++ value=0
++++ echo 0
+++ Model_CPU_req=0
++++ func_getenvxmlValue '//model-parameters[@name="ERAI-f19L26"]/param' 'script base'
++++ '[' '!' -f /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/ERAI-f19L26/env_configure.xml ']'
++++ node='//model-parameters[@name="ERAI-f19L26"]/param'
++++ name='script base'
+++++ echo 'cat //model-parameters[@name="ERAI-f19L26"]/param[@name="script base"]/@value'
+++++ xmllint --shell /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/ERAI-f19L26/env_configure.xml
+++++ grep -v '>'
++++ evalStr=' value="${Shome}"'
++++ eval 'value="${Shome}"'
+++++ value=/cluster/work/users/earnest/stercp_exp//b_0_I02_N1M_300hPa/cases
++++ echo /cluster/work/users/earnest/stercp_exp//b_0_I02_N1M_300hPa/cases
+++ Model_script_base=/cluster/work/users/earnest/stercp_exp//b_0_I02_N1M_300hPa/cases
++++ func_getenvxmlValue '//model-parameters[@name="ERAI-f19L26"]/param' 'work dir'
++++ '[' '!' -f /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/ERAI-f19L26/env_configure.xml ']'
++++ node='//model-parameters[@name="ERAI-f19L26"]/param'
++++ name='work dir'
+++++ echo 'cat //model-parameters[@name="ERAI-f19L26"]/param[@name="work dir"]/@value'
+++++ xmllint --shell /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/ERAI-f19L26/env_configure.xml
+++++ grep -v '>'
++++ evalStr=' value="${Swork}/${CaseName}/"'
++++ eval 'value="${Swork}/${CaseName}/"'
+++++ value=/cluster/work/users/earnest/stercp_exp/b_0_I02_N1M_300hPa/ERAI-f19L26_b_0_I02_N1M_300hPa/
++++ echo /cluster/work/users/earnest/stercp_exp/b_0_I02_N1M_300hPa/ERAI-f19L26_b_0_I02_N1M_300hPa/
+++ Model_work_dir=/cluster/work/users/earnest/stercp_exp/b_0_I02_N1M_300hPa/ERAI-f19L26_b_0_I02_N1M_300hPa/
++++ func_getenvxmlValue '//model-parameters[@name="ERAI-f19L26"]/param' 'Reference case'
++++ '[' '!' -f /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/ERAI-f19L26/env_configure.xml ']'
++++ node='//model-parameters[@name="ERAI-f19L26"]/param'
++++ name='Reference case'
+++++ echo 'cat //model-parameters[@name="ERAI-f19L26"]/param[@name="Reference case"]/@value'
+++++ xmllint --shell /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/ERAI-f19L26/env_configure.xml
+++++ grep -v '>'
++++ evalStr=
++++ eval
++++ echo
+++ Model_ref_case=
++++ func_getenvxmlValue '//model-parameters[@name="ERAI-f19L26"]/param' 'Reference date'
++++ '[' '!' -f /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/ERAI-f19L26/env_configure.xml ']'
++++ node='//model-parameters[@name="ERAI-f19L26"]/param'
++++ name='Reference date'
+++++ echo 'cat //model-parameters[@name="ERAI-f19L26"]/param[@name="Reference date"]/@value'
+++++ xmllint --shell /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/ERAI-f19L26/env_configure.xml
+++++ grep -v '>'
++++ evalStr=
++++ eval
++++ echo
+++ Model_ref_date=
++++ func_getenvxmlValue '//model-parameters[@name="ERAI-f19L26"]/param' 'one timestep ingestion data template'
++++ '[' '!' -f /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/ERAI-f19L26/env_configure.xml ']'
++++ node='//model-parameters[@name="ERAI-f19L26"]/param'
++++ name='one timestep ingestion data template'
+++++ echo 'cat //model-parameters[@name="ERAI-f19L26"]/param[@name="one timestep ingestion data template"]/@value'
+++++ xmllint --shell /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/ERAI-f19L26/env_configure.xml
+++++ grep -v '>'
++++ evalStr=' value="Model_template.nc"'
++++ eval 'value="Model_template.nc"'
+++++ value=Model_template.nc
++++ echo Model_template.nc
+++ Model_1step_template=Model_template.nc
++++ func_getenvxmlValue '//model-parameters[@name="ERAI-f19L26"]/param' 'restart name'
++++ '[' '!' -f /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/ERAI-f19L26/env_configure.xml ']'
++++ node='//model-parameters[@name="ERAI-f19L26"]/param'
++++ name='restart name'
+++++ echo 'cat //model-parameters[@name="ERAI-f19L26"]/param[@name="restart name"]/@value'
+++++ xmllint --shell /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/ERAI-f19L26/env_configure.xml
+++++ grep -v '>'
++++ evalStr=' value="${CaseName}.${yy}-${mm}-${dd}-${hh}.nc"'
++++ eval 'value="${CaseName}.${yy}-${mm}-${dd}-${hh}.nc"'
+++++ value='ERAI-f19L26_b_0_I02_N1M_300hPa.????-??-??-.nc'
++++ echo 'ERAI-f19L26_b_0_I02_N1M_300hPa.????-??-??-.nc'
+++ Model_restart_file='ERAI-f19L26_b_0_I02_N1M_300hPa.????-??-??-.nc'
++++ func_getenvxmlValue '//model-parameters[@name="ERAI-f19L26"]/param' 'spectral resolution'
++++ '[' '!' -f /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/ERAI-f19L26/env_configure.xml ']'
++++ node='//model-parameters[@name="ERAI-f19L26"]/param'
++++ name='spectral resolution'
+++++ echo 'cat //model-parameters[@name="ERAI-f19L26"]/param[@name="spectral resolution"]/@value'
+++++ xmllint --shell /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/ERAI-f19L26/env_configure.xml
+++++ grep -v '>'
++++ evalStr=' value="63"'
++++ eval 'value="63"'
+++++ value=63
++++ echo 63
+++ export SPG_RES=63
+++ SPG_RES=63
+++ Date_time_ini=
++++ func_getenvxmlValue '//model-parameters[@name="ERAI-f19L26"]/param' 'time step'
++++ '[' '!' -f /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/ERAI-f19L26/env_configure.xml ']'
++++ node='//model-parameters[@name="ERAI-f19L26"]/param'
++++ name='time step'
+++++ echo 'cat //model-parameters[@name="ERAI-f19L26"]/param[@name="time step"]/@value'
+++++ xmllint --shell /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/ERAI-f19L26/env_configure.xml
+++++ grep -v '>'
++++ evalStr=
++++ eval
++++ echo
+++ modeldtime=
++++ echo 'scale=7;(21600/3600.0/12)'
++++ bc -l
+++ met_rlx=.5000000
++++ du /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/ERAI-f19L26/Model_template.nc
++++ awk -F ' ' '{print $1}'
+++ BaseSize=5900
++++ echo 'scale=0;(5900*0.87)/1.0'
++++ bc -l
+++ BaseSize87=5133
+++ . /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/functions/func_debug_Setting_3
++++ set -ex
++ '[' '!' -z /cluster/work/users/earnest/stercp_exp/b_0_I02_N1M_300hPa/ERAI-f19L26_b_0_I02_N1M_300hPa/ ']'
+++ func_getenvxmlValue '//model-parameters[@name="ERAI-f19L26"]/param' 'output name'
+++ '[' '!' -f /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/ERAI-f19L26/env_configure.xml ']'
+++ node='//model-parameters[@name="ERAI-f19L26"]/param'
+++ name='output name'
++++ echo 'cat //model-parameters[@name="ERAI-f19L26"]/param[@name="output name"]/@value'
++++ xmllint --shell /cluster/projects/nn9385k/people/earnest/basic/b_0_I02_N1M_300hPa/supported_models/ERAI-f19L26/env_configure.xml
++++ grep -v '>'
+++ evalStr=' value="${CaseName}.${yy}-${mm}-${dd}-${hh}.nc"'
+++ eval 'value="${CaseName}.${yy}-${mm}-${dd}-${hh}.nc"'
++++ value='ERAI-f19L26_b_0_I02_N1M_300hPa.????-??-??-.nc'
+++ echo 'ERAI-f19L26_b_0_I02_N1M_300hPa.????-??-??-.nc'
++ modelout='/cluster/work/users/earnest/stercp_exp/b_0_I02_N1M_300hPa/ERAI-f19L26_b_0_I02_N1M_300hPa//ERAI-f19L26_b_0_I02_N1M_300hPa.????-??-??-.nc'
++ rm -f '/cluster/work/users/earnest/stercp_exp/b_0_I02_N1M_300hPa/ERAI-f19L26_b_0_I02_N1M_300hPa//ERAI-f19L26_b_0_I02_N1M_300hPa.????-??-??-.nc'
++ '[' '!' -z /cluster/work/users/earnest/stercp_exp/b_0_I02_N1M_300hPa/DataIngestion_sp/Data ']'
++ exit 0
++ '[' '!' -z /cluster/work/users/earnest/stercp_exp//b_0_I02_N1M_300hPa/cases ']'
++ rm -rf /cluster/work/users/earnest/stercp_exp//b_0_I02_N1M_300hPa/cases
++ exit 0
++ rm -rf /cluster/work/users/earnest/stercp_exp/b_0_I02_N1M_300hPa/DataIngestion_sp/Data/../Data

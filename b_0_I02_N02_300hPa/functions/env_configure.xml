@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Supermodeling configuration  -->
+<config_definition>
+  <case name="Common name" value="b_0_I02_N02_300hPa"/> 
+  <description>
+     Data Ingestion online test  
+     vname: CasePrefix 
+  </description>
+<!-- ================================================================== -->
+  <global-parameters>
+    <param name="Prefix for spectral ingestion files" value="SNF">
+      <description><!-- vname: SP_Prefix --></description> </param>
+    <param name="Method" value="ensemble_gp_W">
+      <description><!-- vname: DI_Method; demo, ensemble_gp, ensemble_sp --></description> </param>
+    <param name="Debug level" value="3">
+      <description><!-- 
+        Define how many debug information will be kept. 
+          0: minimal info
+          1: necessary info for debug
+          3: all possible info for debug
+      --></description> </param>
+    <param name="User mail account" value="earnestshen@gmail.com">
+      <description><!-- Umail --></description> </param>
+    <param name="HPC server" value="betzy">
+      <description><!-- Notes --></description> </param>
+    <param name="CPU account" value="nn9385k">
+      <description><!-- Notes --></description> </param>
+    <param name="CPU cores per node" value="128">
+      <description><!-- Notes --></description> </param>
+    <param name="Name of model" value="NorESM1 ERAI-f19L26">
+      <description><!--vname: Models. NorESM1, CESM112, etc--></description> </param>
+    <param name="Data ingestion cycle" value="6">
+      <description><!-- vname: DIC (hr) --></description> </param>
+    <param name="Job Submitting" value="sbatch">
+      <description><!-- Notes --></description> </param>
+    <param name="Model start date" value="1997-03-15">
+      <description><!-- Notes --></description> </param>
+    <param name="Model Run cycle" value="1">
+      <description><!-- Model cycle defined by stop/restart; How long is the run --></description> </param>
+    <param name="Model Integration Cycle" value="1">
+      <description><!-- Define one run from initial to end (base of relaunch?)  --></description> </param>
+    <param name="Relaxation time scale" value="12">
+      <description><!-- for nudging (in hr, min/max: 6/43200000 hr) --></description> </param>
+    <param name="work base home" value="/tmp/STERCP_Shen">
+      <description><!-- vname: workhome . It is /tmp/STERCP when using virtual disk--></description></param>
+    <param name="Supported models" value="supported_models">
+      <description><!-- vname: supported_models. --></description></param>
+    <param name="Models used in current case" value="running_case">
+      <description><!-- vname: running_case. --></description></param>
+    <param name="Backup dir for temporary verification" value="${Swork}/DataIngestion_sp/Data">
+      <description><!-- vname: DataIngestionBCK  --></description></param>
+    <param name="Common vertical hybrid layer" value="${fhome}/hybab.nc">
+      <description><!-- Vertical layer as a common layer for all Models  --></description></param>
+    <param name="Data Ingestion time step" value="21600">
+      <description><!--Data Ingestion data frequency (s), 21600 86400, ....  --></description></param>
+    <param name="STERCP home dir" value="/cluster/work/users/${USER}/stercp_exp//${CasePrefix}/cases">
+      <description><!-- vname: Shome --></description></param>
+    <param name="STERCP work dir" value="/cluster/work/users/${USER}/stercp_exp/${CasePrefix}">
+      <description><!-- vname: Swork  --></description></param>
+    <param name="Ingestion Data Dir" value="${workhome}/DataIngestion_sp/${CasePrefix}/Data">
+      <description><!-- vname: DIData  --></description></param>
+    <param name="Common Data Ingestion pool" value="${workhome}/DataIngestion_sp/${CasePrefix}/Pool">
+      <description><!-- vname: DataIngestionCommPool  . A common offline data set for Data Ingestion --></description> </param>
+    <param name="Common ingestion data prefix" value="CND">
+      <description><!-- Notes --></description> </param>
+    <param name="Should we backup ingested data" value="TRUE">
+      <description><!-- Notes --></description> </param>
+    <param name="Seconds after stopping writting" value="0.5">
+      <description><!-- wait for # (s) to make sure model stopped writing output and the file are ready to be used --></description> </param>
+    <param name="Seconds waiting for next file check" value="1">
+      <description><!-- Notes --></description> </param>
+    <param name="Maximum sleep counter" value="300000">
+      <description><!-- Sleep # times before considering the system is crashed. (better fit with the maximum time used for 6hr/12hr model simulation) --></description> </param>
+    <param name="cdo executable" value="/cluster/software/CDO/1.9.8-intel-2019b/bin/cdo -O -s ">
+      <description><!-- Notes --></description> </param>
+    <param name="Line break" value="---------------------------------------------------------------------">
+      <description><!-- Notes --></description> </param>
+		</global-parameters>
+<!-- ================================================================== -->
+<!-- ================================================================== -->
+  <model-parameters name="unknown">
+    <param name="" value="">
+      <description><!-- Notes --></description> </param>
+  </model-parameters>
+<!-- ================================================================== -->
+
+</config_definition>

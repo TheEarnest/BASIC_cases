@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- Supermodeling configuration  -->
+
+<config_definition>
+<!-- ================================================================== -->
+  <model-parameters name="ERA5-ML">
+    <param name="Case Name" value="${Model}_${CasePrefix}">
+      <description><!-- vname: CaseName . --></description> </param>
+    <param name="CPU cores" value="0">
+      <description><!--  --></description> </param>
+    <param name="spectral resolution" value="63">
+      <description><!-- Notes --></description> </param>
+    <param name="Rebuild model" value="FALSE">
+      <description><!-- Notes --></description> </param>
+    <param name="script base" value="${Shome}">
+      <description><!-- Notes --></description> </param>
+    <param name="work dir" value="${Swork}/${CaseName}/">
+      <description><!-- Notes , vname: Model_work_dir --></description> </param>
+    <param name="one timestep ingestion data template" value="Model_template.nc">
+      <description><!-- Notes --></description> </param>
+    <param name="output name" value="${CaseName}.${yy}-${mm}-${dd}-${hh}.nc">
+      <description><!-- Notes --></description> </param>
+    <param name="restart name" value="${CaseName}.${yy}-${mm}-${dd}-${hh}.nc">
+      <description><!-- Notes --></description> </param>
+    <param name="Ingestion data name" value="${SP_Prefix}_${year}${month}${day}_${datesec}.nc">
+      <description><!-- Notes --></description> </param>
+    <param name="Has leap year" value="TRUE">
+      <description><!-- Notes --></description> </param>
+  </model-parameters>
+<!-- ================================================================== -->
+</config_definition>

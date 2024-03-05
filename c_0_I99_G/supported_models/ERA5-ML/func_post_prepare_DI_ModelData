@@ -1,0 +1,104 @@
+#! /bin/bash
+###############################################################################
+# post-processing ingestion data  
+# general offline dataset has only keep two snapshots 
+#------------------------------------------------------------------------------
+. ${fhome}/func_debug_Setting_$DebugLev
+#
+. ${SupportData}/func_getFilenameFromList
+if [ "${is_NdgData_in_nextFN}" == "FALSE" ]; then
+  this_its=1
+  next_its=2
+else
+  this_its=2
+  next_its=1
+fi
+# ---
+# should switch to a simple but clear version, MS.
+# --------------------------------------------------------------
+# Recheck date & time 
+DateTime=${Date_time}; . ${fhome}/func_split_datetime
+DateTimeStr=`${fhome}/func_defdate.py ${yy} ${mm} ${dd} ${ss} ${DataIngestion_dt}`
+ . ${fhome}/func_split_python_datetime
+# --------------------------------------------------------------
+
+# all intermediate process has been moved to main monitoring. Here we only check if intermediate/buffer data is ready
+
+SourceND=${SPN_dataDir}/DI_Data_${yy}${mm}${dd}_${ss}.nc
+file2check=${SourceND}
+. ${fhome}/func_WaitingFile
+. ${fhome}/func_FileIsWriting
+cd ${SPN_dataDir}/work
+cp ${SourceND} DI_Data
+CurrentND=${SPN_dataDir}/work/DI_Data
+#${SupportData}/func_change_CAM_yymmddss.py ${CurrentND} ${yy}${mm}${dd} ${ss}
+
+#CurrentND=${SPN_dataDir}/../CAM4_f19_1step_ingestion_template.nc
+this_hr=`echo "scale=0;(${ss}/3600)" | bc -l `
+next_hr=`echo "scale=0;(${ns}/3600)" | bc -l `
+# -----------------------------------------------------
+# -----------------------------------------------------
+${CDO} -settime,${this_hr}:00:00 -setdate,${yy}-${mm}-${dd} ${CurrentND} ${SPN_dataDir}/t1_${ThisDIDataFN}
+#${SupportData}/func_change_CAM_yymmddss.py ${SPN_dataDir}/t1_${ThisDIDataFN} ${yy}${mm}${dd} ${ss}
+if [ "${this_its}" == "1" ]; then 
+  ${CDO} -settime,${next_hr}:00:00 -setdate,${ny}-${nm}-${nd} ${CurrentND} ${SPN_dataDir}/t2_${ThisDIDataFN}
+  #${SupportData}/func_change_CAM_yymmddss.py ${SPN_dataDir}/t2_${ThisDIDataFN} ${ny}${nm}${nd} ${ns}
+else
+  DateTimeStr=`${fhome}/func_defdate.py ${yy} ${mm} ${dd} ${ss} -${DataIngestion_dt} `
+  . ${fhome}/func_split_python_datetime
+  #MS: temporary comment out and generating all ingestion data form the same timestep # 
+  #ms#cp ${BCK_dataDir}/SPN_DI_Data_${ny}${nm}${nd}_${ns}.nc ${SPN_dataDir}/t2_${ThisDIDataFN}
+  DateTime=${Date_time}; . ${fhome}/func_split_datetime
+  DateTimeStr=`${fhome}/func_defdate.py ${yy} ${mm} ${dd} ${ss} -${DataIngestion_dt}`
+  . ${fhome}/func_split_python_datetime
+
+  prev_hr=`echo "scale=0;(${ns}/3600)" | bc -l `
+  ${CDO} -settime,${prev_hr}:00:00 -setdate,${ny}-${nm}-${nd} ${CurrentND} ${SPN_dataDir}/t2_${ThisDIDataFN}
+  #${SupportData}/func_change_CAM_yymmddss.py ${SPN_dataDir}/t2_${ThisDIDataFN} ${ny}${nm}${nd} ${ns}
+  DateTime=${Date_time}; . ${fhome}/func_split_datetime
+  DateTimeStr=`${fhome}/func_defdate.py ${yy} ${mm} ${dd} ${ss} ${DataIngestion_dt}`
+  . ${fhome}/func_split_python_datetime
+fi
+echo 'ThisDIDataFN:' ${ThisDIDataFN}
+${CDO} -mergetime ${SPN_dataDir}/t?_${ThisDIDataFN} ${SPN_dataDir}/${ThisDIDataFN}
+rm ${SPN_dataDir}/t?_${ThisDIDataFN}
+#MS if [ ! -f "${BCK_dataDir}/${NextDIDataFN}" ]; then
+newdate=`echo ${NextDIDataFN} | awk -F "${SP_Prefix}_" '{print $2}' | cut -c1-14 `
+yy=`echo ${newdate} | cut -c1-4`; mm=`echo ${newdate} | cut -c5-6`;
+dd=`echo ${newdate} | cut -c7-8`; ss=`echo ${newdate} | cut -c10-14`;
+DateTimeStr=`${fhome}/func_defdate.py ${yy} ${mm} ${dd} ${ss} ${DataIngestion_dt} `
+. ${fhome}/func_split_python_datetime
+this_hr=`echo "scale=0;(${ss}/3600)" | bc -l `
+next_hr=`echo "scale=0;(${ns}/3600)" | bc -l `
+${CDO} -settime,${this_hr}:00:00 -setdate,${yy}-${mm}-${dd}  ${CurrentND} ${SPN_dataDir}/t1_${NextDIDataFN}
+#${SupportData}/func_change_CAM_yymmddss.py ${SPN_dataDir}/t1_${NextDIDataFN} ${yy}${mm}${dd} ${ss}
+${CDO} -settime,${next_hr}:00:00 -setdate,${ny}-${nm}-${nd}  ${CurrentND} ${SPN_dataDir}/t2_${NextDIDataFN}
+#${SupportData}/func_change_CAM_yymmddss.py ${SPN_dataDir}/t2_${NextDIDataFN} ${ny}${nm}${nd} ${ns}
+echo 'NextDIDataFN:' ${NextDIDataFN}
+
+${CDO} -mergetime ${SPN_dataDir}/t?_${NextDIDataFN} ${SPN_dataDir}/${NextDIDataFN}
+rm ${SPN_dataDir}/t?_${NextDIDataFN}
+# -----------------------------------------------------
+# -----------------------------------------------------
+echo $yy $mm $dd $ss $its $its2 >> ${DIData}/temp_check_list
+rm -f ${SPN_dataDir}/work/SPN_DI_Data_nDate?
+rm -f ${CurrentND}
+# -----------------------------------------------------
+# Backup ingestion configuration for debug/analyzing
+# -----------------------------------------------------
+if [ "${is_backup_N}" == "TRUE" ]; then
+  LID="`date +%y%m%d_%H%M%S`"
+  rm -f ${BCK_dataDir}/${ThisDIDataFN} 
+  cp -f ${SPN_dataDir}/${ThisDIDataFN} ${BCK_dataDir}/${ThisDIDataFN}
+  rm -f ${BCK_dataDir}/${NextDIDataFN}
+  cp -f ${SPN_dataDir}/${NextDIDataFN} ${BCK_dataDir}/${NextDIDataFN}
+#  rm -f ${BCK_dataDir}/${AfterNextDIDataFN}
+#  cp -f ${SPN_dataDir}/${AfterNextDIDataFN} ${BCK_dataDir}/${AfterNextDIDataFN}
+  mv ${SPN_dataDir}/${ThisDIDataFN} ${BCK_dataDir}/${ThisDIDataFN}_${LID} &  
+  mv ${SPN_dataDir}/${NextDIDataFN} ${BCK_dataDir}/${NextDIDataFN}_${LID} &
+#  rm -f ${AfterNextDIDataFN} & 
+  mv ${SPN_dataDir}/DI_Data* ${BCK_dataDir}/ || echo "No DI data(?)" & 
+fi
+
+
+

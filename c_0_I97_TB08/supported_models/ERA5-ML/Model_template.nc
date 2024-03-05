@@ -1,0 +1,1 @@
+/cluster/projects/nn9385k/people/earnest/stercp/ERA5-ML/ERA5-ML_s0SP_en1.2022-01-01-00.nc

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- Supermodeling configuration  -->
+
+<config_definition>
+<!-- ================================================================== -->
+  <model-parameters name="Basic">
+    <param name="Selected first spherical harmonics" value="0">
+      <description><!-- Note: Ssp_res  --></description> </param>
+   <param name="Selected latest spherical harmonics" value="21">
+      <description><!-- Note: Ssp_res  --></description> </param>
+    <param name="Common spherical harmonics" value="106">
+      <description><!-- Csp_res --></description> </param>
+  </model-parameters>
+<!-- ================================================================== -->
+</config_definition>

@@ -1,0 +1,8 @@
+
+
+case=`pwd | awk -F "/" '{print $NF}'`; for yy in `seq -w 1989 2011`; do  files=`ls /cluster/projects/nn9385k/people/earnest/stercp/ERAI-f19L26/ERAI-f19L26.${yy}*`; rm -f *${yy}-??-??-??.nc; for file in $files; do suffix=`echo $file | awk -F "ERAI-f19L26." '{print $NF}'`; echo $suffix; ln -sf $file ${case}.$suffix ; done; done
+
+
+for yy in `seq -w 1989 2011`; do files=`ls /cluster/projects/nn9385k/people/earnest/stercp/ERAI-f19L26/ERAI-f19L26.${yy}*`; rm -f *${yy}-??-??-??.nc; for file in $files; do suffix=`echo $file | awk -F "ERAI-f19L26." '{print $NF}'`; echo $suffix; ln -sf $file ERAI-f19L26_b_0_I01_N01_850hPa.$suffix ; done; done
+
+

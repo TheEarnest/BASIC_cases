@@ -1,0 +1,8 @@
+#! /bin/bash 
+set +x
+ny=`echo ${DateTimeStr} | awk -F " " '{print $1}' `
+nm=`echo ${DateTimeStr} | awk -F " " '{print $2}' `;nm=`echo 00$nm | tail -c3`
+nd=`echo ${DateTimeStr} | awk -F " " '{print $3}' `;nd=`echo 00$nd | tail -c3`
+ns=`echo ${DateTimeStr} | awk -F " " '{print $4}' `;ns=`echo 0000$ns | tail -c6`
+nh=`echo "scale=0;(${ns}/3600)" | bc -l `
+. ${fhome}/func_debug_Setting_${DebugLev}

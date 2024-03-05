@@ -1,0 +1,24 @@
+#! /bin/bash
+. ${fhome}/func_debug_Setting_${DebugLev}
+[ ! -z ${DIData} ] && [ -d ${DIData} ] && rm -rf ${DIData}/../*
+mkdir -p ${DIData}
+[ ! -d ${Shome} ] && mkdir -p ${Shome}
+[ ! -d ${Swork} ] && mkdir -p ${Swork}
+[ ! -d ${FlagsDir} ] && mkdir -p ${FlagsDir}
+[ ! -d ${DIData}/../Logs ] && mkdir -p ${DIData}/../Logs
+[ ! -d ${DataIngestionBCK}/Logs ] && mkdir -p ${DataIngestionBCK}/Logs
+[ ! -d ${DataIngestionCommPool} ] && mkdir -p ${DataIngestionCommPool}
+if [ "${is_backup_N}" == "TRUE" ]; then
+  [ ! -d ${DataIngestionBCK} ] && mkdir -p ${DataIngestionBCK}; fi
+for Model in ${Models}; do
+  [ ! -d ${DataIngestionCommPool}/${Model} ] && mkdir -p ${DataIngestionCommPool}/${Model}
+#  [ ! -d ${DataIngestionBCK}/../restarts/${Model} ] && mkdir -p ${DataIngestionBCK}/../restarts/${Model} 
+done
+[ ! -d ${DataIngestionCommPool}/../Logs ] && mkdir -p ${DataIngestionCommPool}/../Logs
+[ ! -d ${DataIngestionCommPool}/../Data ] && mkdir -p ${DataIngestionCommPool}/../Data
+rm -f ${FlagsDir}/* || echo "Flags are cleared."  # remove old flag files
+rm -f ${DIData}/../Logs/*  || echo "Logs are cleared."
+rm -f ${DIData}/../Pool/*  || echo "Pool data are cleared."
+rm -f ${DIData}/../Pool/*/*  || echo "Pool data of Models are cleared."
+export FlagBase=${FlagsDir}/BaseFlag
+echo "1" > ${FlagBase}

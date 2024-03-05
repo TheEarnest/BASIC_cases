@@ -1,0 +1,72 @@
+#! /bin/bash
+###############################################################################
+. ${fhome}/func_debug_Setting_$DebugLev
+JobStartTime=`date`; echo ${Line_Break}; echo ${Line_Break}
+JobName=func_vi_Model2Common 
+#tempPrefix=t_${JobName}
+echo "Starting "${JobName}" ...... "
+###############################################################################
+. ${fhome}/func_debug_Setting_${DebugLev}
+SourceData=${Model_output}
+file2check=${SourceData}
+. ${fhome}/func_WaitingFile
+. ${fhome}/func_FileIsWriting
+Model_1step_template=`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "one timestep ingestion data template"`
+BaseSize=`du ${SupportData}/${Model_1step_template} | awk -F " " '{print $1}'`
+BaseSize87=`echo "scale=0;(${BaseSize}*0.87)/1.0"| bc -l `
+# . ${fhome}/func_CheckFileSize
+
+SPN_dataDir=${DIData}/${Model}
+BCK_dataDir=${DataIngestionBCK}/${Model}/${yy}
+[ ! -d ${SPN_dataDir}/work ] && mkdir -p ${SPN_dataDir}/work
+cd ${SPN_dataDir}/work
+[ ! -z ${SPN_dataDir} ] && rm -rf ${SPN_dataDir}/work/*
+
+
+T_T_vname="t";          S_T_vname="T";
+T_U_vname="u";          S_U_vname="U";
+T_V_vname="v";          S_V_vname="V";
+T_PS_vname="sp";        S_PS_vname="PS";
+vnames="PS T U V"
+
+
+
+
+cp -f ${SupportData}/func_vertinterpolation.ncl .
+if [ ! -f ${SPN_dataDir}/Model_hybab.nc ]; then
+  cp -f ${SupportData}/Model_hybab.nc ${SPN_dataDir}/ ; fi
+# vertical interpolation by using NCL, independent to horizontal resolution and models
+SDname=${t_prefix}_SourceData_${ss}.nc
+SHRname=${SPN_dataDir}/Model_hybab.nc
+TDname=${t_prefix}_TargetData_${ss}.nc
+TLname=Model_M2C_template.nc
+TLHRname=${DIData}/hybab_N.nc
+#cp ${SourceData} ${SDname}
+is_filesize_correct="False"
+while [ "${is_filesize_correct}" == "False" ]; do
+  ncks -O -v PS,Q,T,U,V,date,datesec ${SourceData} ${SDname}
+  filesize=`du ${SDname} | awk -F " " '{print $1}'`
+  if [ ${filesize} -gt ${BaseSize87} ]; then
+    is_filesize_correct="True"
+  else
+    echo "${Model}: file size check fail ... ${SourceData} ..."
+    rm ${SDname}
+    sleep ${sleepS}s
+  fi
+done
+if [ ! -f ../${TLname} ]; then
+  ${CDO} -b 32B copy -remapcon,${SupportData}/Model_griddes.txt ${DIData}/CommonData_template.nc ../${TLname}
+  ln -sf ../${TLname} ${TLname}
+else
+  ln -sf ../${TLname} ${TLname}
+fi
+. ${SupportData}/func_Model_vertinterpolation
+wait
+cp -f ${TDname} ${data_vi}
+if [ "${DebugLev}" == "3" ]; then
+  cp -f ${TDname} ${BCK_dataDir}/data_${Model}_vi_${yy}-${mm}-${dd}-${ss} & 
+fi 
+###############################################################################
+echo ${JobStartTime}
+echo `date`" || "${JobName}
+echo ${Line_Break}

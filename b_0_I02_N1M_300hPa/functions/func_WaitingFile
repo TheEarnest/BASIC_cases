@@ -1,0 +1,22 @@
+#! /bin/bash
+###############################################################################
+. ${fhome}/func_debug_Setting_${DebugLev}
+JobStartTime=`date`; echo ${Line_Break}; echo ${Line_Break}
+JobName=func_WaitingFile
+echo "Starting "${JobName}" ...... "
+###############################################################################
+SourceDataWaitingCounter=0
+whileControlFlag=${FlagsDir}/WCF_$$$$
+echo "1" > ${whileControlFlag}
+while [ ! -f ${file2check} -a ${SourceDataWaitingCounter} -lt ${MaxSleepCounter} -a -f ${whileControlFlag} ]; do
+  echo "${Model}: wait for data ... ${file2check} ..." 
+  sleep ${sleepS}s
+  SourceDataWaitingCounter=`echo "scale=0;(${SourceDataWaitingCounter}+1)" | bc -l `
+done
+rm ${whileControlFlag}
+wait
+###############################################################################
+echo ${JobStartTime}
+echo `date`" || "${JobName}
+echo ${Line_Break}
+# . ${fhome}/func_debug_Setting_${DebugLev}

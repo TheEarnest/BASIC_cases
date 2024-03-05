@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- Supermodeling configuration  -->
+
+<config_definition>
+<!-- ================================================================== -->
+  <model-parameters name="Basic">
+    <param name="Training Targets" value="T500">
+      <description><!-- Notes --></description> </param>
+  </model-parameters>
+  <model-parameters name="CAM4">
+    <param name="Weight" value=".5">
+      <description><!-- Notes --></description> </param>
+  </model-parameters>
+  <model-parameters name="CAM5">
+    <param name="Weight" value=".5">
+      <description><!-- Notes --></description> </param>
+  </model-parameters>
+  <model-parameters name="Evaluator">
+    <param name="Data path" value="/cluster/projects/nn9385k/people/earnest/ECHAM6_500hpa_gp_6hrly">
+      <description>Using ECHAM6 AMIP as training target </description> </param>
+<!--
+    <param name="Data path" value="/cluster/projects/nn9385k/people/earnest/ECHAM6_500hpa_gp_6hrly">
+      <description>Using ECHAM6 AMIP as training target </description> </param>
+-->
+    <param name="file name" value="${yy}/ei_${Target}_${yy}${mm}${dd}_${ihr}.nc">
+      <description><!-- Notes --></description> </param>
+  </model-parameters>
+  <model-parameters name="GroundTruth">
+    <param name="Data path" value="/cluster/projects/nn9385k/people/earnest/ECHAM6_gp_6hrly">
+      <description>Using ECHAM6 AMIP as training target </description> </param>
+<!--
+    <param name="Data path" value="/cluster/projects/nn9385k/people/earnest/ECHAM6_gp_6hrly">
+      <description>Using ECHAM6 AMIP as training target </description> </param>
+-->
+    <param name="Weight" value="1.0">
+      <description><!-- Notes --></description> </param>
+    <param name="file name" value="${yy}/ei_${yy}${mm}${dd}_${ihr}.nc">
+      <description><!-- Notes --></description> </param>
+  </model-parameters>
+  <model-parameters name="SyncBasedLearning">
+    <param name="Training rate" value="0.0000">
+      <description><!-- Notes --></description> </param>
+  </model-parameters>
+<!-- ================================================================== -->
+</config_definition>

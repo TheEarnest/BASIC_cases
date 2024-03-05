@@ -1,0 +1,7 @@
+#! /bin/bash
+echo "1" > ${FlagsDir}/is_${Model}_ready
+is_output_ready=${FlagsDir}/is_${Model}_output_ready
+if [ ! -f ${is_output_ready}_check ]; then
+  echo "1" > ${is_output_ready}_check
+fi
+#ln -sf ${is_output_ready}_check ${is_output_ready}

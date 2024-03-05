@@ -1,0 +1,84 @@
+#! /bin/bash
+###############################################################################
+. ${fhome}/func_debug_Setting_$DebugLev
+JobStartTime=`date`; echo ${Line_Break}; echo ${Line_Break}
+JobName=func_check_restarts 
+echo "Starting "${JobName}" ...... "
+###############################################################################
+###############################################################################
+if [ -d ${Model_work_dir} ]; then
+  cd ${Model_work_dir}
+else
+  mkdir -p ${Model_work_dir}; cd ${Model_work_dir}
+fi
+# Check if old restart files exist
+Date_time=${Date_time_ini}
+DateTime=${Date_time}; . ${fhome}/func_split_datetime
+
+if [ "${model_type}" == "AMIP" ]; then
+  Model_restarts=${DataIngestionBCK}/../../restarts/${Model}/`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "Restart files for model warm start"`
+elif [ "${model_type}" == "couple" ]; then
+  Model_restarts=${DataIngestionBCK}/../../restarts/${Model}/${Model_ref_case}-${Model_ref_date}.tar.gz
+fi
+
+# check for previous restart file 
+restartfn=${Model_work_dir}/`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "restart name"`
+
+is_ContinueRun=FALSE; run_type=""
+if [ ! -f ${restartfn} ]; then # no previous restart file 
+  if [ ! -f ${Model_restarts} ]; then
+    run_type="startup"
+  else
+    if [ ! -d ${BCK_dataDir}/../restarts ]; then
+      mkdir -p ${BCK_dataDir}/../restarts;  fi
+    tar xf ${Model_restarts} -C ${BCK_dataDir}/../restarts
+    cd ${BCK_dataDir}/../restarts
+    modelrestart=`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "restart name"` 
+    restartfn=`ls *.cam.r.*`  || restartfn="None"
+    if [ ! -f  ${modelrestart}  ]; then
+      # check if the restart is from other cases 
+      prefix=`echo ${modelrestart} | awk -F "${yy}" '{print $1}'`
+      infix=`echo ${prefix} | awk -F "${CaseName}" '{print $NF}'`
+      existing_restfn=`ls *${infix}*` || existing_restfn="None"
+      if [ ! -f ${existing_restfn} ]; then
+        echo "Missing restart file ... "
+        run_type="startup"; is_ContinueRun="FALSE";
+      else
+        refCaseprefix=`echo ${existing_restfn} | awk -F "${infix}" '{print $1}'`
+        run_type="branch"; is_ContinueRun="FALSE";
+        restart_CN=`echo ${restartfn} | awk -F "${infix}" '{print $1}'`
+        restart_date=`echo ${restartfn} | awk -F "${infix}" '{print $2}' | awk -F "-00000" '{print $1}'`
+        # update  associated attribute in restart file
+        oldAtt=`ncdump -h ${existing_restfn} | grep current_metdata_filename` || oldAtt="None"
+        if [ "${oldAtt}" == "None" ]; then
+          time ncatted -O -a current_metdata_filename,global,c,c,"${SP_Prefix}_${yy}${mm}${dd}_${ss}.nc" ${existing_restfn}
+          time ncatted -O -a next_metdata_filename,global,c,c,"${SP_Prefix}_${yy}${mm}${dd}_43200.nc" ${existing_restfn} # not actually matters, but the code would like to read this Attribute........  =.=
+        else
+          echo "Errrrrrrrrrrrrrrrrrrrrrrrrrr"
+        fi
+        mv ${BCK_dataDir}/../restarts/* ${Model_work_dir}
+      fi
+    else # if restart file matches 
+      run_type="startup"; is_ContinueRun="TRUE";
+
+#      ncatted -O -a current_metdata_filename,global,c,c,"${yr}/ERAint_nuCAM_${yr}${mm}_MLS310315.nc" ${nudcheckfile}
+#      NextMonth=`${python} ${funcPath}/dp_func_datecheck.py ${yr} ${mm} ${dd} months 1 `
+#      Nyr=`echo ${NextMonth} | cut -c1-4`
+#      Nmm=`echo ${NextMonth} | cut -c6-7`
+#      ncatted -O -a next_metdata_filename,global,c,c,"${yr}/ERAint_nuCAM_${Nyr}${Nmm}_MLS310315.nc" ${nudcheckfile}
+
+#  ncatted -O -a current_metdata_filename,global,c,c,"198201/SNF_19820101_00000.nc" CAM4_template.cam2.r.1870-01-01-00000.nc
+#  ncatted -O -a next_metdata_filename,global,c,c,"198201/SNF_19820101_43200.nc" CAM4_template.cam2.r.1870-01-01-00000.nc 
+      mv ${BCK_dataDir}/../restarts/*.nc ${Model_work_dir}
+    fi
+  fi
+else
+  run_type="startup"; is_ContinueRun="TRUE";
+  Model_record=${DataIngestionBCK}/../../archive/${Model}*/rest/${yy}-${mm}-${dd}-${ss}/*h1*
+  cp -f ${Model_record} ${Model_work_dir}  
+fi # end of restart check 
+
+###############################################################################
+echo ${JobStartTime}
+echo `date`" || "${JobName}
+echo ${Line_Break}

@@ -1,0 +1,15 @@
+#! /bin/bash
+func_getenvxmlValue()
+{
+if [ ! -f ${scripthome}/${envConfigFilePath}/${EnvCongFile} ]; then
+  echo "Missing env configuration file."
+  exit 1
+fi
+node=$1
+name=$2
+evalStr=`echo "cat ${node}[@name=\"${name}\"]/@value" | xmllint --shell ${scripthome}/${envConfigFilePath}/${EnvCongFile} | grep -v ">"`
+# echo "cat //global-parameters/param[@name=\"function home\"]/@value" | xmllint --shell env_configure.xml | grep -v ">"
+# echo "cat //global-parameters/param[@name=\"HPC server\"]/@value" | xmllint --shell env_configure.xml | grep -v ">"
+eval ${evalStr}
+echo ${value}
+}

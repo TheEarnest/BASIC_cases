@@ -1,0 +1,38 @@
+#! /bin/bash
+###############################################################################
+# ensemble info
+#------------------------------------------------------------------------------
+. ${fhome}/func_debug_Setting_$DebugLev
+#
+JobStartTime=`date`; echo ${Line_Break}; echo ${Line_Break}
+JobName=func_gp2sp
+# 
+echo "Starting "${JobName}" ...... "
+#tempPrefix=t_'gp2sp_'$$
+###############################################################################
+CN_res=42
+SupportData=${scripthome}/${supported_models}/${Model}
+#data_org=${DataIngestionCommPool}/../Data/${Model}/data_${Model}_org_${yy}-${mm}-${dd}-${ss}
+cd ${DataIngestionCommPool}/../Data/${Model}/
+rm -f t_gp2sp_*
+${CDO} -f nc copy -selvar,t,u,v ${data_vi} ${tempPrefix}_CL_TUV
+${CDO} -f nc copy -selvar,sp ${data_vi} ${tempPrefix}_CL_PS
+${CDO} -delete,name=t,u,v ${data_vi} ${data_vi}_CL_no_tuv
+${CDO} -ln ${tempPrefix}_CL_PS ${tempPrefix}_CL_lsp
+${CDO} -merge ${tempPrefix}_CL_lsp ${tempPrefix}_CL_TUV ${tempPrefix}_CL_merged 
+${CDO} -gp2sp -uv2dv -remapcon,t${CN_res}grid ${tempPrefix}_CL_merged ${tempPrefix}_CL_sp_${CN_res}
+${CDO} -sp2sp,${SN_RES} ${tempPrefix}_CL_sp_${CN_res} ${tempPrefix}_CL_sp_${SN_RES}
+#${CDO} -sp2sp,${CN_res} ${tempPrefix}_sp_${SN_RES} ${tempPrefix}_sp_${SN_RES}to${CN_res}
+
+# get residural 
+time ${CDO} -remapcon,${SupportData}/Model_griddes.txt -sp2gp -sp2sp,${CN_res} -dv2uv ${tempPrefix}_CL_sp_${SN_RES} ${tempPrefix}_CL_sp2gp
+${CDO} -sub ${tempPrefix}_CL_TUV -delete,name=sp ${tempPrefix}_CL_sp2gp ${tempPrefix}_CL_tuv_gp_res  
+
+#MS mv ${tempPrefix}_sp_res ${data_vi}_visp_res  
+
+cp ${tempPrefix}_CL_sp_${SN_RES} ${data_vi}_visp 
+cp ${tempPrefix}_CL_tuv_gp_res ${data_vi}_tuv_vigp_res
+
+###############################################################################
+echo `date`" || "${JobName}
+echo ${Line_Break}

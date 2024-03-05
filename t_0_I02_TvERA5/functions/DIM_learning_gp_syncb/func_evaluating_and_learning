@@ -1,0 +1,195 @@
+#! /bin/bash
+###############################################################################
+# ensemble info
+#------------------------------------------------------------------------------
+. ${fhome}/func_debug_Setting_$DebugLev
+#
+JobStartTime=`date`; echo ${Line_Break}; echo ${Line_Break}
+JobName=func_evaluating_and_learning
+# 
+t_prefix=t_el_$$
+echo "Starting "${JobName}" ...... "
+###############################################################################
+
+AreaWeighting=${DIData}/AreaWeighting
+[ ! -f ${AreaWeighting} ] && cp -f ${fhome}/CommonData_1var1L_cos_map.nc  ${AreaWeighting}
+
+
+Learning_Table=${Shome}/Learning_table_vsp_syncb
+bk_Models=${Models}
+Models="GroundTruth "${Models}
+if [ ! -f ${Learning_Table} ]; then
+  headingStr="Date Count "
+  Training_Counter=000 
+  Weight_count="${yy}-${mm}-${dd}-${ss} "${Training_Counter}" "
+  # read weight for each model
+  envConfigFilePath=functions/DIM_${DI_Method}; . ${fhome}/func_getenvxmlValue
+  Training_rate=`func_getenvxmlValue "//model-parameters[@name=\"SyncBasedLearning\"]/param" "Training rate"`
+  headingStr=${headingStr}" TrainingRate"
+  Weight_count=${Weight_count}" "${Training_rate}
+  for Model in ${Models}; do
+    Model_weight=`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "Weight"`
+    evalstr="${Model}_weight=${Model_weight}"; eval ${evalstr}
+    weight=${Model}_weight; #echo ${!weight}
+    headingStr=${headingStr}" "${Model}
+    Weight_count=${Weight_count}" "`echo "scale=10;(${!weight}/1.0)"| bc -l`
+  done
+  headingStr=${headingStr}" ST_error"
+  Weight_count=${Weight_count}" 0.0"
+  echo ${headingStr} > ${Learning_Table}_heading
+  echo ${Weight_count} > ${Learning_Table}
+else
+  Training_Counter=`tail -n 1 ${Learning_Table} | awk -v c1=2 '{print $c1}'`
+  Training_rate=`tail -n 1 ${Learning_Table} | awk -v c1=3 '{print $c1}'`
+  model_count=3
+  for Model in ${Models}; do
+    model_count=`echo "scale=0;(${model_count}+1)"| bc -l`
+    Model_weight=`tail -n 1 ${Learning_Table} | awk -v c1=${model_count} '{print $c1}'`
+    evalstr="${Model}_weight=${Model_weight}"; eval ${evalstr}
+    weight=${Model}_weight; echo ${!weight}
+  done
+fi
+Models=${bk_Models}
+
+# evaluate model weight 
+envConfigFilePath=functions/DIM_${DI_Method}; . ${fhome}/func_getenvxmlValue
+Training_Targets=`func_getenvxmlValue "//model-parameters[@name=\"Basic\"]/param" "Training Targets"`
+
+GroundTruthPath=`func_getenvxmlValue "//model-parameters[@name=\"GroundTruth\"]/param" "Data path"`
+Evaluatorpath=`func_getenvxmlValue "//model-parameters[@name=\"Evaluator\"]/param" "Data path"`
+ihr=`echo "scale=0;(${ss}/3600)" | bc -l `; ihr=`echo 00$ihr | tail -c3`
+for Target in ${Training_Targets}; do
+  Target=${Target}
+  # prepare data as ground truth
+  #Evaluator=${Evaluatorpath}/ei_${Target}_${yy}${mm}${dd}_${ihr}.nc
+  Evaluator=${Evaluatorpath}/`func_getenvxmlValue "//model-parameters[@name=\"Evaluator\"]/param" "file name"`
+  #Evaluator=${Evaluatorpath}/ei_${Target}_${yy}${mm}${dd}_${ihr}.nc
+done
+#GroundTruth=${GroundTruthPath}/ei_${yy}${mm}${dd}_${ihr}.nc
+GroundTruth=${GroundTruthPath}/`func_getenvxmlValue "//model-parameters[@name=\"GroundTruth\"]/param" "file name"`
+
+envConfigFilePath=functions; . ${fhome}/func_getenvxmlValue
+deficiency=`echo "scale=0;(1-${GroundTruth_weight})" | bc -l `
+#deficiency=1.0
+
+for Model in ${Models}; do
+  envConfigFilePath=${supported_models}/${Model}; . ${fhome}/func_getenvxmlValue
+  SupportData=${scripthome}/${supported_models}/${Model}
+  CaseName=`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "Case Name"`
+  Model_output_name=`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "output name"`
+  Model_work_dir=`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "work dir"`
+  Model_output=${Model_work_dir}/${Model_output_name}
+
+  # wait for model output ready 
+  file2check=${Model_output}
+  . ${fhome}/func_WaitingFile
+  . ${fhome}/func_FileIsWriting
+  Model_1step_template=`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "one timestep ingestion data template"`
+  BaseSize=`du ${SupportData}/${Model_1step_template} | awk -F " " '{print $1}'`
+  BaseSize87=`echo "scale=0;(${BaseSize}*0.87)/1.0"| bc -l `
+  . ${fhome}/func_CheckFileSize
+
+  cd ${DIData}/${Model}/
+  rm -f t_el_*
+
+  SupportData=${scripthome}/${supported_models}/${Model}
+
+  Tdata=`ncdump -h ${Model_output} | grep ${Target}` || Tdata="None"
+  is_comparing_target_available=1
+  [ "${Tdata}" == "None" ] && is_comparing_target_available=0
+
+  if [ "${is_comparing_target_available}" == "1" ]; then
+    data_org=${Model_output}
+    is_TargetMissing="1"
+    while [ "${is_TargetMissing}" == "1" ]; do
+      is_TargetMissing="0"
+      ${CDO} -selvar,${Target} ${data_org} ${t_prefix}_${Target} || is_TargetMissing="1"
+      sleep 0.1s
+    done
+    ${CDO} -remapcon,${fhome}/grid.txt  ${t_prefix}_${Target} ${t_prefix}_${Target}_gp_CERA 
+    weight=${Model}_weight; echo ${!weight}
+    ${CDO} -mul ${AreaWeighting} ${t_prefix}_${Target}_gp_CERA ${t_prefix}_${Target}_gp_CERA_AreaWeighted
+    #${CDO} -divc,${deficiency} -mulc,${!weight} ${t_prefix}_${Target}_gp_CERA_AreaWeighted ${t_prefix}_${Target}_gp_CERA_SupermodelWeighted 
+    ${CDO} -mulc,${!weight} ${t_prefix}_${Target}_gp_CERA_AreaWeighted ${t_prefix}_${Target}_gp_CERA_SupermodelWeighted
+  fi
+done # 
+
+
+Model_WeightedMean=${DIData}/${Target}_gp_CERA_WeightedMean
+rm -f ${Model_WeightedMean}
+${CDO} -ensmean ${DIData}/*/${t_prefix}_${Target}_gp_CERA_AreaWeighted ${Model_WeightedMean}
+
+Model_SWeightedSum=${DIData}/${Target}_gp_CERA_SWeightedSum
+rm -f ${Model_SWeightedSum}
+
+Weighted_Evaluator=${DIData}/${t_prefix}_${Target}_gp_CERA_AreaWeighted_Evaluator
+${CDO} -mulc,${GroundTruth_weight} -mul ${AreaWeighting} ${Evaluator} ${Weighted_Evaluator}
+#${CDO} -enssum ${DIData}/*/${t_prefix}_${Target}_gp_CERA_SupermodelWeighted ${Weighted_Evaluator} ${Model_SWeightedSum}
+${CDO} -enssum ${DIData}/*/${t_prefix}_${Target}_gp_CERA_SupermodelWeighted ${Model_SWeightedSum}
+
+EDiff=${DIData}/${t_prefix}_${Target}_gp_CERA_diff_Evaluator
+${CDO} -sub ${Model_SWeightedSum} -mul ${AreaWeighting} ${Evaluator} ${EDiff}
+
+Diff_Evaluator=`cdo -outputf,%16.10f -fldmean ${EDiff}`
+echo ${Training_Counter}
+Training_Counter=`echo 000\`echo "scale=0;(${Training_Counter}+1)" | bc -l\` | tail -c4 `
+echo ${Training_Counter}
+Weight_count="${yy}-${mm}-${dd}-${ss} "${Training_Counter}" "${Training_rate}" "${GroundTruth_weight}
+
+
+for Model in ${Models}; do
+  cd ${DIData}/${Model}
+  # Model diff
+  ${CDO} -sub ${t_prefix}_${Target}_gp_CERA_AreaWeighted ${Model_WeightedMean} ${t_prefix}_${Target}_gp_CERA_diff_ModelWeightSum
+  # Obs diff
+  Diff_model=`cdo -outputf,%16.10f -fldmean ${t_prefix}_${Target}_gp_CERA_diff_ModelWeightSum`
+  Inter_vs_Sync_errors=${t_prefix}_${Target}_gp_CERA_Errors_Inter_vs_Sync
+  ${CDO} -mul ${t_prefix}_${Target}_gp_CERA_diff_ModelWeightSum ${EDiff} ${Inter_vs_Sync_errors} 
+  Inter_vs_Sync_error=`${CDO} -outputf,%16.10f -fldmean ${Inter_vs_Sync_errors}`
+  weight=${Model}_weight
+  echo "scale=0;(${!weight}-(${Training_rate}*(${Diff_model})*(${Diff_Evaluator})))" | bc -l
+  new_weight=`echo "scale=0;(${!weight}-(${Training_rate}*(${Inter_vs_Sync_error})))" | bc -l`
+  if (( $(bc <<<"$Diff_Evaluator > 50") || $(bc <<<"$Diff_Evaluator < -50") )) ; then
+    echo "Size of Diff_Evaluator is too over ... "${Diff_Evaluator}
+#    exit 7777
+  fi
+  Weight_count=${Weight_count}" "${new_weight}
+  evalStr="${Model}_weight=${new_weight}"; eval ${evalStr}
+  weight=${Model}_weight; echo ${!weight}
+  if (( $(bc <<<"$new_weight > 2") || $(bc <<<"$new_weight < -2") )) ; then
+    echo "Size of new_weight is too over ... "${new_weight}
+  #  exit 7777
+  fi
+done #
+Diff_Supermodel_Evaluator=`cdo -outputf,%16.10f -sqrt -fldmean -sqr ${EDiff}`
+mv ${EDiff} ${DataIngestionBCK}/EDiff_${yy}${mm}${dd}_${ss}.nc
+Diff=`echo "scale=10;(${Diff_Supermodel_Evaluator}/1.0)" | bc -l`
+echo "${Weight_count} ${Diff}" >> ${Learning_Table}
+
+# consider only weight of models
+WeightsSum=0
+for Model in ${Models}; do 
+  weight=${Model}_weight
+  WeightsSum=`echo "(${WeightsSum}+${!weight})" | bc -l`
+done
+
+# adjusting for calculating errors
+if (( $(bc <<<"$WeightsSum != 1.0 ") )) ; then
+  weight_offset=`echo "((1-${WeightsSum})/${iModels})" | bc -l`
+  Weight_count="${yy}-${mm}-${dd}-${ss} "${Training_Counter}" "${Training_rate}" "${GroundTruth_weight}
+  for Model in ${Models}; do
+    weight=${Model}_weight
+    new_weight=`echo "scale=10;(${!weight}+(${weight_offset}))/1.0" | bc -l`
+    evalStr="${Model}_weight=${new_weight}"; eval ${evalStr}
+    Weight_count=${Weight_count}" "${new_weight}
+  done
+  #echo ${Weight_count} >> ${Learning_Table}  
+fi
+
+echo ${Weight_count} >> ${Learning_Table}
+
+envConfigFilePath=functions; . ${fhome}/func_getenvxmlValue
+###############################################################################
+echo ${JobStartTime}
+echo `date`" || "${JobName}
+echo ${Line_Break}

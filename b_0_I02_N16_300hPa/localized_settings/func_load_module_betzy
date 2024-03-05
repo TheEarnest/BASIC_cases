@@ -1,0 +1,14 @@
+#! /bin/bash 
+# Modules employed on betzy 2020-12-17:
+set +x
+#module load intel/2019b
+#module load iimpi/2019b
+module load netCDF-Fortran/4.5.2-iimpi-2019b
+module load netCDF/4.7.1-iimpi-2019b
+module load NCL/6.6.2-intel-2019b
+module load NCO/4.9.3-intel-2019b
+module load CDO/1.9.8-intel-2019b
+module load Python/3.7.4-GCCcore-8.3.0
+#module load SciPy-bundle/2019.10-intel-2019b-Python-3.7.4
+module load netcdf4-python/1.5.3-intel-2019b-Python-3.7.4
+. ${fhome}/func_debug_Setting_${DebugLev}

@@ -1,0 +1,180 @@
+#! /bin/bash 
+# -----------------------------------------------------
+# Model Specific Details
+# -----------------------------------------------------
+#
+JobStartTime=`date`; echo ${Line_Break}; echo ${Line_Break}
+JobName=func_${Model}_monitoring
+echo "Starting "${JobName}" ...... "
+. ${fhome}/../localized_settings/func_load_module_${HPC}
+# 
+Model=${Model}
+DateTime=${Date_time_ini}; . ${fhome}/func_split_datetime
+MetDataList=SPN_autogen_${Model}_${yy}.txt
+. ${fhome}/func_getModelSettings
+
+# -----------------------------------------------------
+# ESM Monitoring Details 
+# -----------------------------------------------------
+# ==== building folders ====
+if [ ! -d ${BCK_dataDir} ]; then 
+  mkdir -p ${BCK_dataDir}
+else 
+  [ ! -z ${BCK_dataDir} ] && rm -rf ${BCK_dataDir}/*
+fi
+
+[ ! -d ${SPN_dataDir} ] && mkdir -p ${SPN_dataDir}
+if [ ! -f ${BCK_dataDir}/${Model_1step_template} ]; then
+  cp -f ${SupportData}/${Model_1step_template} ${BCK_dataDir}/ ; fi
+if [ ! -f ${SPN_dataDir}/${Model_1step_template} ]; then 
+  cp -f ${BCK_dataDir}/${Model_1step_template} ${SPN_dataDir}/ ; fi
+ncdump -v hyai ${SPN_dataDir}/${Model_1step_template} | grep "hyai =" > ${SPN_dataDir}/lev_hyai
+(( ny = yy + 1 )) ; (( oy = yy - 1 ))
+# ==== end of building folders ====
+if [ ! -f ${BCK_dataDir}/${MetDataList} ]; then
+  cd ${BCK_dataDir}/../
+  cp ${SupportData}/DI_namelist_template_0001_wholeYear_12hrly.txt ${MetDataList}
+  sed -i s/"_000012"/"_${oy}12"/g ${MetDataList}
+  sed -i s/"_0001"/"_${yy}"/g ${MetDataList} 
+  sed -i s/"_0002"/"_${ny}"/g ${MetDataList}
+  sed -i s/"DIData"/"${SP_Prefix}"/g ${MetDataList}
+fi 
+# -----------------------------------------------------
+# Backup Ingestion Data configuration for debug/analyzing  
+# -----------------------------------------------------
+#if [ "${is_backup_N}" == "TRUE" ]; then
+#  if [ ! -d ${BCK_dataDir} ]; then mkdir -p ${BCK_dataDir}/${yy}; fi
+#  cp -f ${MetDataList} ${BCK_dataDir}/
+#fi
+# -----------------------------------------------------
+# Model initialization
+# -----------------------------------------------------
+## MSD --
+#export TScounter=1.00
+## msd --
+. ${SupportData}/func_check_restarts
+
+Model_script_dir=${Model_script_base}/${CaseName}
+[ ! -d ${Model_script_dir} ] && is_rebuild_Model="TRUE"
+is_forced_rebuild=0
+. ${SupportData}/func_rebuild_Model
+
+cd ${Model_work_dir}
+rm -f is_DI_data_ready
+
+
+cd ${Model_script_dir}
+buildscript=`ls ${CaseName}*.build` ; ./${buildscript}
+
+mv ${Model_work_dir}/*.bldlog.* ${Model_work_dir}/../logs/bld/ || echo "no build logs..."
+mv ${Model_work_dir}/*.log.* ${Model_work_dir}/../logs/bld/  || echo "no run logs..."
+#echo "0" > ${Model_work_dir}/is_DI_data_ready
+
+. ${fhome}/func_preprocessing_1st_timestep
+#. ${SupportData}/func_DI_ModelData_preparing
+
+
+# -----------------------------------------------------
+# Build spectral data & DI data
+# -----------------------------------------------------
+Date_time=${Date_time_ini}
+DateTime=${Date_time}; . ${fhome}/func_split_datetime
+#${SupportData}/func_prepare_ingesting_ModelData ${Date_time}
+. ${SupportData}/func_post_prepare_DI_ModelData
+# -----------------------------------------------------
+# Build spectral data & DI data 
+# -----------------------------------------------------
+cd ${DIData}/../
+export LID="`date +%y%m%d_%H%M%S`"
+Date_time=${Date_time_ini}; . ${fhome}/func_split_datetime
+
+DateTimeStr=`${fhome}/func_defdate.py ${yy} ${mm} ${dd} ${ss} ${DataIngestion_dt} `
+. ${fhome}/func_split_python_datetime
+New_Date_time=${ny}-${nm}-${nd}-${ns}
+Date_time=${New_Date_time}; WaitingCounter=0
+
+echo "Model monitoring starts ..." > ${is_job_monitoring_Model}
+
+# Creating flags 
+. ${fhome}/func_flag_Model_preprocess_ready
+
+#==== model launch is centralized and control by SP_monitoring ====
+# cd ${Model_script_dir}
+# jobscript=`ls ${CaseName}*.submit`; ./${jobscript}
+#==================================================================
+cd ${Model_work_dir}
+if [ ! -f is_DI_data_ready_check ]; then
+  echo "1" > is_DI_data_ready_check
+fi
+ln -sf is_DI_data_ready_check is_DI_data_ready
+# -----------------------------------------------------
+# Monitoring loop start 
+# -----------------------------------------------------
+while [ ${WaitingCounter} -lt ${MaxSleepCounter} -a -f ${is_job_monitoring_Model} ]; do
+  DateTime=${Date_time}; . ${fhome}/func_split_datetime
+  modelout=${Model_work_dir}/`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "output name"`
+  if [ -f ${modelout} ]; then
+    file2check=${modelout}
+    . ${fhome}/func_FileIsWriting
+    echo ${modelout}' checked and ready ...'
+
+##MS# --- no DI debuging --- 
+#export TScounter=`echo "scale=0;(${TScounter}+0.01)" | bc -l `
+#export TScounter=${TScounter}
+##MS# end of --- no DI debuging --- debuging change ....
+
+    #. ${SupportData}/func_DI_ModelData_preparing
+    #${SupportData}/func_prepare_ingesting_ModelData ${Date_time}
+    # moving all intermediate processing to main monitoring. Here we only check if intermediate/buffer data is ready 
+    
+
+# define next ingesting date & time 
+    DateTimeStr=`${fhome}/func_defdate.py ${yy} ${mm} ${dd} ${ss} ${DataIngestion_dt}`
+    . ${fhome}/func_split_python_datetime
+    New_Date_time=${ny}-${nm}-${nd}-${ns}
+
+    yy=${ny}; mm=${nm}; dd=${nd}; ss=${ns}
+    . ${SupportData}/func_post_prepare_DI_ModelData
+    echo "Updating log: done with ${Date_time} at  `date`" >> ${SPN_dataDir}/DataIngestion_logs 
+    ln -sf ${Model_work_dir}/is_DI_data_ready_check ${Model_work_dir}/is_DI_data_ready
+    WaitingCounter=0
+  else
+    New_Date_time=${Date_time}
+  fi
+  WaitingCounter=`echo "scale=0;(${WaitingCounter}+1)" | bc -l `
+  echo "Waiting for next ingestion timestep ${DateTime}: ${WaitingCounter}"
+  sleep ${sleepS}s
+  Date_time=${New_Date_time}; . ${fhome}/func_split_datetime
+  
+  # force rebuid if current date time is the beginning of year
+  #   prepare this in the end of loop because CESM's output time is the end of intergration 
+  if [ "${mm}-${dd}-${ss}" == "01-01-21600" ]; then
+    (( ny = yy + 1 )) ; (( oy = yy - 1 ))
+    MetDataList=SPN_autogen_${Model}_${yy}.txt
+    cd ${BCK_dataDir}/../
+    cp -f ${SupportData}/DI_namelist_template_0001_wholeYear_12hrly.txt ${MetDataList}
+    sed -i s/"_000012"/"_${oy}12"/g ${MetDataList}
+    sed -i s/"_0001"/"_${yy}"/g ${MetDataList}
+    sed -i s/"_0002"/"_${ny}"/g ${MetDataList}
+    sed -i s/"DIData"/"${SP_Prefix}"/g ${MetDataList}
+
+    cd ${Model_script_dir}
+    sedStr=`echo met_filenames_list = \'${BCK_dataDir}/../${MetDataList}\' | sed 's/\//\\\\\//g' `
+    sed -i s/"met_filenames_list".*/"${sedStr}"/g  Buildconf/cam.buildnml.csh
+    if [ "${model_type}" == "couple" ]; then
+      sed -i s/"IDATE    =".*/"IDATE    = ${yy}${mm}${dd},"/g Buildconf/micom.buildnml.csh
+      sed -i s/"IDATE0   =".*/"IDATE0   = ${yy}${mm}${dd},"/g Buildconf/micom.buildnml.csh
+    fi
+    buildscript=`ls ${CaseName}*.build`
+    if [ "${model_type}" == "couple" ]; then
+      ./${buildscript}
+    fi
+
+  fi # end of forcing rebuild
+
+done
+
+###############################################################################
+echo ${JobStartTime}
+echo `date`" || "${JobName}
+echo ${Line_Break}

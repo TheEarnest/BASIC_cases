@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Supermodeling configuration  -->
+<config_definition>
+<!-- ================================================================== -->
+  <model-parameters name="NorESM1">
+    <param name="Case Name" value="${Model}_${CasePrefix}">
+      <description><!-- vname: CaseName . --></description> </param>
+    <param name="CPU cores" value="373">
+      <description><!--  --></description> </param>
+    <param name="spectral resolution" value="63">
+      <description><!-- Notes --></description> </param>
+    <param name="Rebuild model" value="FALSE">
+      <description><!-- Notes --></description> </param>
+    <param name="script base" value="${Shome}">
+      <description><!-- Notes --></description> </param>
+    <param name="work dir" value="${Swork}/${CaseName}/run">
+      <description><!-- Notes , vname: Model_work_dir --></description> </param>
+    <param name="type" value="couple">
+      <description>AMIP, OMIP, couple</description> </param>
+    <param name="Reference case" value="ana_19800115_me_mem26">
+      <description>case name of restart file</description> </param>
+    <param name="Reference date" value="2010-10-15">
+      <description>data of restart file</description> </param>
+    <param name="archive dir" value="${Swork}/../archive/${CaseName}/atm/hist">
+      <description><!-- Notes , vname: Model_archive_dir --></description> </param>
+    <param name="one timestep ingestion data template" value="Model_template.nc">
+      <description><!-- Notes --></description> </param>
+    <param name="Restart files for model warm start" value="${yy}-${mm}-${dd}.tar.gz">
+      <description><!-- Notes, vname: Model_restarts, verifying model restarts by checking horizontal resolutions  --></description> </param>
+    <param name="time step" value="1800">
+      <description><!-- (s) --></description> </param>
+    <param name="output name" value="${CaseName}.cam2.h1.${yy}-${mm}-${dd}-${ss}.nc">
+      <description><!-- Notes --></description> </param>
+    <param name="restart name" value="${CaseName}.cam2.r.${yy}-${mm}-${dd}-${ss}.nc">
+      <description><!-- Notes --></description> </param>
+    <param name="Ingestion data name" value="${SP_Prefix}_${year}${month}${day}_${datesec}.nc">
+      <description><!-- Notes --></description> </param>
+    <param name="Has leap year" value="FALSE">
+      <description><!-- Notes --></description> </param>
+  </model-parameters>
+<!-- ================================================================== -->
+</config_definition>

@@ -1,0 +1,24 @@
+#! /bin/bash
+###############################################################################
+. ${fhome}/func_debug_Setting_$DebugLev
+JobStartTime=`date`; echo ${Line_Break}; echo ${Line_Break}
+JobName=func_DI_ModelData_preparing 
+echo "Starting "${JobName}" ...... "
+###############################################################################
+
+if [ "${DI_Method}" == "demo_en" ]; then
+  echo ${Line_Break}
+  echo "  Applying demo_en sync ..."
+  echo ${Line_Break}
+  modelout=${Model_work_dir}/`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "output name"`
+  if [ -f ${modelout} ]; then
+    cp ${modelout} ${NudgingData}/${Model}/di_data_${Model} 
+    #. ${fhome}/func_flag_di_Model_data_ready
+  fi
+#if [ "${DI_Method}" == "ensemble_gp" ]; then
+fi
+
+###############################################################################
+echo ${JobStartTime}
+echo `date`" || "${JobName}
+echo ${Line_Break}

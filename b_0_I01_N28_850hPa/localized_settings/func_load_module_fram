@@ -1,0 +1,13 @@
+#! /bin/bash 
+# Modules employed on FRAM 2017-11-03:
+set +x
+#set -x
+module use /cluster/software/modulefiles/easybuild/all
+module load netCDF/4.4.1.1-intel-2018a-HDF5-1.8.19
+module load CDO/1.9.3-intel-2018a
+module load Python/3.6.4-intel-2018a 
+module load netcdf4-python/1.4.0-intel-2018a-Python-3.6.4
+module load NCL/6.5.0-intel-2018a
+module load NCO/4.7.2-intel-2018a
+#. supported_HPC/LD_PATH_Norway_${HPC}
+. ${fhome}/func_debug_Setting_${DebugLev}

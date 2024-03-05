@@ -1,0 +1,1 @@
+../Weight_maps/map_1var1L_COMBINED_TPonly_61k_smooth08_sx2.nc

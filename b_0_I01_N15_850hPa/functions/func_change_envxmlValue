@@ -1,0 +1,15 @@
+#! /bin/bash
+func_change_envxmlValue()
+{
+if [ ! -f ${scripthome}/${envConfigFilePath}/${EnvCongFile} ]; then
+  echo "Missing env configuration file."
+  exit 1
+fi
+node=$1
+name=$2
+value=$3
+echo -e "cd ${node}[@name=\"${name}\"]/@value\nset ${value}\nsave" | xmllint --shell ${scripthome}/${envConfigFilePath}/${EnvCongFile}
+# echo -e "cd //global-parameters/param[@name=\"HPC server\"]/@value\nset failed\nsave" | xmllint --shell env_configure.xml
+eval ${evalStr}
+echo ${value}
+}

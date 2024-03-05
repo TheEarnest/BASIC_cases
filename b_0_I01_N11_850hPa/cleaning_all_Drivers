@@ -1,0 +1,44 @@
+#! /bin/bash 
+set +x
+# -----------------------------------------------------
+# Basic setting
+# -----------------------------------------------------
+DebugLev=0
+export scripthome=`pwd`
+export fhome=${scripthome}/functions
+export t_prefix=t_SPN$$
+export EnvCongFile=env_configure.xml
+# -----------------------------------------------------
+# Common configurations
+if [ -f ${fhome}/func_getGlobalSettings ]; then
+  . ${fhome}/func_getGlobalSettings
+  export FlagsDir=${DIData}/../Flags
+# -----------------------------------------------------
+# Check pathes
+# -----------------------------------------------------
+  . ${fhome}/func_check_pathes
+# -----------------------------------------------------
+# Clean data and flags in common data pool
+# -----------------------------------------------------
+  [ ! -z ${DIData} ] && rm -rf ${DIData}/*
+  echo "${DIData} is clean for a new run."
+# -----------------------------------------------------
+# Clean data in models
+# -----------------------------------------------------
+  yy="????"; mm="??"; dd="??"; ss="?????"
+  for Model in ${Models}; do 
+    export Model=${Model} 
+    . ${fhome}/func_getModelSettings
+    if [ ! -z ${Model_work_dir} ]; then
+      modelout=${Model_work_dir}/`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "output name"`
+    fi
+    rm -f ${modelout}
+  done
+
+# -----------------------------------------------------
+# Clean old logs and temp files
+# -----------------------------------------------------
+  [ ! -z ${DataIngestionBCK} ] && rm -rf ${DataIngestionBCK}/../* & 
+  [ ! -z ${Shome} ] && rm -rf ${Shome} &
+fi
+exit 0

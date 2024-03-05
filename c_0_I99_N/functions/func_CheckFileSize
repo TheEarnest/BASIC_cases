@@ -1,0 +1,23 @@
+#! /bin/bash
+###############################################################################
+#set +x
+JobStartTime=`date`; echo ${Line_Break}; echo ${Line_Break}
+JobName=func_CheckFileSize
+echo "Starting "${JobName}" ...... "
+###############################################################################
+is_filesize_correct="False"
+while [ "${is_filesize_correct}" == "False"  ]; do
+  echo "${Model}: file size check fail ... ${file2check} ..." 
+  sleep ${sleepS}s
+  [ -f ${file2check} ] && touch ${file2check}
+  filesize=`du ${file2check} | awk -F " " '{print $1}'`
+  if [ ${filesize} -gt ${BaseSize87} ]; then
+    is_filesize_correct="True"
+  fi
+done
+echo ${file2check}" size checked."
+wait
+###############################################################################
+echo ${JobStartTime}
+echo `date`" || "${JobName}
+echo ${Line_Break}

@@ -1,0 +1,171 @@
+#! /bin/bash
+###############################################################################
+# 
+#------------------------------------------------------------------------------
+. ${fhome}/func_debug_Setting_$DebugLev
+#
+JobStartTime=`date`; echo ${Line_Break}; echo ${Line_Break}
+JobName=func_${DI_Method}_DI_preparing 
+# 
+echo "Starting "${JobName}" ...... "
+tempPrefix=t_"DI_prep"$$
+###############################################################################
+# waiting for the output data 
+# (Note: for any initial launch, the output file should comes from previous simulation, either a default one or one kept in job repository)
+#
+
+envConfigFilePath=functions/DIM_${DI_Method}; . ${fhome}/func_getenvxmlValue
+Ssp_res=`func_getenvxmlValue "//model-parameters[@name=\"Basic\"]/param" "Selected spherical harmonics"`
+Csp_res=`func_getenvxmlValue "//model-parameters[@name=\"Basic\"]/param" "Common spherical harmonics"`
+envConfigFilePath=functions; . ${fhome}/func_getenvxmlValue
+
+# learning table will be kept in Shome
+is_DI_DataPreparing=${FlagsDir}/DI_DataPreparing_$$$$
+echo "Preparing data ..." > ${is_DI_DataPreparing}
+
+deficiency=`echo "scale=0;(1-${GroundTruth_weight})" | bc -l `
+
+while [ -f ${is_DI_DataPreparing} ]; do
+  is_all_data_ready=1
+  for Model in ${Models}; do
+    envConfigFilePath=${supported_models}/${Model}; . ${fhome}/func_getenvxmlValue
+    SupportData=${scripthome}/${supported_models}/${Model}
+    CaseName=`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "Case Name"`
+    Model_output_name=`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "output name"`
+    Model_work_dir=`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "work dir"`
+    Model_output=${Model_work_dir}/${Model_output_name}
+    if [ ! -d ${DIData}/${Model} ]; then
+      mkdir -p ${DIData}/${Model}; fi
+
+    is_Model_ready=${FlagsDir}/MD_${Model}_is_ready
+    if [ ! -f ${Model_output} ] && [ ! -f ${is_Model_ready} ] ; then
+      is_all_data_ready=0
+    else
+      if [ ! -f ${is_Model_ready} ]; then
+        data_org=${DIData}/${Model}/data_${Model}_org_${yy}-${mm}-${dd}-${ss}
+        data_vi=${DIData}/${Model}/data_${Model}_vi_${yy}-${mm}-${dd}-${ss}
+        . ${SupportData}/func_vi_Model2Common
+      # -------------------------------------------
+      # after vertical interpolation has been done
+        cp ${Model_output} ${data_org} & 
+        file2check=${data_vi}
+        . ${fhome}/func_FileIsWriting
+        # Data ingestion part 
+        . ${fhome}/DIM_${DI_Method}/func_gp2sp
+        #cp ${tempPrefix}_CL_sp_S${Ssp_res} ${data_vi}_visp
+        modelweight=${Model}_weight
+        modelweight=`echo "(${!modelweight}*${deficiency})" | bc -l `
+        ${CDO} -mulc,${modelweight} ${tempPrefix}_CL_sp_S${Ssp_res} ${data_vi}_visp
+        echo "1" > ${is_Model_ready}
+      fi
+    fi
+  done
+  if [ "${is_all_data_ready}" == "1" ]; then
+    rm ${is_DI_DataPreparing}; rm -f ${FlagsDir}/MD_*_is_ready
+  fi
+  sleep ${sleepS}s
+done
+
+envConfigFilePath=functions/DIM_${DI_Method}; . ${fhome}/func_getenvxmlValue
+GroundTruthPath=`func_getenvxmlValue "//model-parameters[@name=\"GroundTruth\"]/param" "Data path"`
+Truth=${GroundTruthPath}/`func_getenvxmlValue "//model-parameters[@name=\"GroundTruth\"]/param" "file name"`
+#echo ${GroundTruth_weight}
+
+envConfigFilePath=functions; . ${fhome}/func_getenvxmlValue
+cd ${DataIngestionCommPool}
+
+GroundTruth=${DataIngestionCommPool}/GroundTruth_${yy}${mm}${dd}_${ss}
+${CDO} -sp2sp,${Ssp_res} -selvar,t,sd,svo,sp ${Truth} ${GroundTruth}
+Weighted_GroundTruth=${DataIngestionCommPool}/WGroundTruth_${yy}${mm}${dd}_${ss}
+${CDO} -mulc,${GroundTruth_weight} ${GroundTruth} ${Weighted_GroundTruth} 
+DataIngestionCommData=${DataIngestionCommPool}/${DataIngestionCommPrefix}_${yy}${mm}${dd}_${ss}
+
+vars=`${CDO} -showvar ${Weighted_GroundTruth}`
+#${CDO} -enssum  ${DIData}/*/data_*_visp ${Weighted_GroundTruth} DI_interM_visp$$
+vifiles=`ls --color=no ${DIData}/*/data_*_visp`
+for var in ${vars}; do
+  evalSTR="${CDO} -enssum "
+  for vifile in ${vifiles}; do
+    evalSTR=${evalSTR}" -selvar,${var} ${vifile} "
+  done
+  evalSTR=${evalSTR}" -selvar,${var} ${Weighted_GroundTruth} DI_interM_visp_${var}_$$"
+  eval ${evalSTR}
+  #${CDO} -enssum -selvar,${var} ${DIData}/*/data_*_vihi ${Weighted_GroundTruth} DI_interM_visp$$
+done
+${CDO} -merge DI_interM_visp_*_$$ DI_interM_visp$$
+mv DI_interM_visp$$ ${DataIngestionCommData} 
+
+# Common data for each model 
+for Model in ${Models}; do
+  DataIngestionModelData=${DataIngestionCommPool}/${Model}/${DataIngestionCommPrefix}_${yy}${mm}${dd}_${ss}.nc
+  ln -sf ${DataIngestionCommData} ${DataIngestionModelData}  
+done
+
+nModel=0
+for Model in ${Models}; do
+  SupportData=${scripthome}/${supported_models}/${Model}
+  DataIngestionModelData=${DataIngestionCommPool}/${Model}/${DataIngestionCommPrefix}_${yy}${mm}${dd}_${ss}.nc
+  DataIngestionData=${DIData}/${Model}/DI_Data_${yy}${mm}${dd}_${ss}.nc
+  cd ${DIData}/${Model}/
+
+  . ${fhome}/DIM_${DI_Method}/func_sp2gp  
+
+  mv ${tempPrefix}_CL_sync_gp ${tempPrefix}_CL_sync 
+
+  . ${SupportData}/func_vi_Common2Model
+
+  . ${fhome}/DIM_${DI_Method}/func_gp2sp2gp
+
+  mv ${tempPrefix}_gp2sp2gp ${DataIngestionData}
+
+  wait
+  sleep 0.1s
+  nModel=`echo "scale=0;(${nModel}+1)" | bc -l `
+done
+
+wait
+#mv ${DataIngestionCommPool}/${tempPrefix}_interM ${DataIngestionData}
+rm -f ${DIData}/*/data_*_vihi
+rm -f ${DIData}/*/data_*_vi_*
+rm -f ${DIData}/*/${tempPrefix}*
+echo "1" ${FlagsDir}/sync_data_ready
+
+rm -f ${FlagsDir}/*_sg_data_ready
+
+
+# here we remove data older than 2 ingestion time steps
+cd ${DataIngestionCommPool}
+ls -rt --color=none > ${DataIngestionCommPool}/../filelist_common
+nfile=`wc -l ${DataIngestionCommPool}/../filelist_common|awk -F " " '{print $1}' `
+dfile=`echo "scale=0;(${nModel}+2)" | bc -l `
+if [ ${nfile} -gt ${dfile} ]; then
+  files=`ls -rt --color=no `
+  for file in ${files}; do
+    if [ ! -d ${file} ]; then
+      dfile=`echo "scale=0;(${dfile}+1)" | bc -l `
+      [ ${nfile} -gt ${dfile} ] && rm ${file}; 
+    fi
+  done
+fi
+
+
+# here we remove data older than 2 ingestion time steps 
+for Model in ${Models}; do
+  # here we remove data older than 1 ingestion time steps
+  cd ${DataIngestionCommPool}/${Model}
+  ls -rt --color=none > ${DataIngestionCommPool}/../filelist_${Model}
+  nfile=`wc -l ${DataIngestionCommPool}/../filelist_${Model}|awk -F " " '{print $1}' `
+  if [ ${nfile} -gt 2 ]; then
+    dfile=2
+    files=`ls -rt --color=no `
+    for file in ${files}; do
+      dfile=`echo "scale=0;(${dfile}+1)" | bc -l `
+      if [ ${nfile} -gt ${dfile} ]; then rm ${file}; fi
+    done
+  fi
+done
+
+###############################################################################
+echo ${JobStartTime}
+echo `date`" || "${JobName}
+echo ${Line_Break}

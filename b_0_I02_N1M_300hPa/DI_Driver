@@ -1,0 +1,70 @@
+#! /bin/bash 
+export LANG=en_US.UTF-8
+set +ex
+# -----------------------------------------------------
+# Basic setting
+# -----------------------------------------------------
+export scripthome=`pwd`
+export fhome=${scripthome}/functions
+export t_prefix=t_SPN$$
+export EnvCongFile=env_configure.xml
+# -----------------------------------------------------
+# Common configurations
+. ${fhome}/func_getGlobalSettings
+. ${fhome}/func_debug_Setting_${DebugLev}
+. ${fhome}/../localized_settings/func_load_module_${HPC}
+export FlagsDir=${DIData}/../Flags
+# -----------------------------------------------------
+export Date_time_ini=${ModelStartData}-00000
+# -----------------------------------------------------
+# Check pathes
+# -----------------------------------------------------
+. ${fhome}/func_check_pathes
+# -----------------------------------------------------
+# Counting model number
+# -----------------------------------------------------
+iMcounter=0
+for Model in ${Models}; do
+  iMcounter=`echo "scale=0;(${iMcounter}+1)"| bc -l `
+done
+export iModels=${iMcounter}
+export dModels=`echo "scale=3;(1.0/${iMcounter})"| bc -l `
+# -----------------------------------------------------
+# Preparing 1st timestep ingestion data and initialize monitoring script
+# -----------------------------------------------------
+echo ${DI_Method}
+cp -f ${fhome}/hybab_N.nc ${DIData}
+time ${fhome}/DIM_${DI_Method}/func_DataIngestion_monitoring  \
+  1>${DataIngestionBCK}/Logs/${t_prefix}_DI_logs  \
+  2>${DataIngestionBCK}/Logs/${t_prefix}_DI_errs &  
+
+DataIngestion_monitoring_id=$!
+trap "kill -9  ${DataIngestion_monitoring_id}" EXIT
+
+sleep 0.11s
+ln -sf ${DataIngestionBCK}/Logs/${t_prefix}_DI_* ${DIData}/../Logs/.
+# -----------------------------------------------------
+# Monitoring Models
+# -----------------------------------------------------
+for Model in ${Models}; do 
+  export Model=${Model} 
+  if [ "${Model}" == "ECHAM6" ]; then 
+    export SPN_dataDir=${DIData}/${Model}_${SP_ECHAM_case} # why (?) 
+  fi
+  time ${supported_models}/${Model}/func_monitoring_Model \
+       1>${DataIngestionBCK}/Logs/${t_prefix}_${Model}_logs \
+       2>${DataIngestionBCK}/Logs/${t_prefix}_${Model}_errs &
+  sleep 0.5s 
+  ln -sf ${DataIngestionBCK}/Logs/${t_prefix}_${Model}_* ${DIData}/../Logs/.
+done
+
+
+is_SP_job_minitoring=${FlagsDir}/SP_job_monitoring_$$
+echo "Monitoring starts ..." > ${is_SP_job_minitoring}
+is_job_launched=0; is_debuging=1;
+while [ -f ${is_SP_job_minitoring} ]; do
+  . ${fhome}/func_jobs_monitoring
+  date; sleep 5s
+done
+
+exit 0

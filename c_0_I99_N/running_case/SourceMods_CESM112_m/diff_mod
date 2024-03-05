@@ -1,0 +1,2609 @@
+diff -r ./cam_comp.F90 ../../SourceMods_NorESM1_org/src.cam/cam_comp.F90
+14c14
+<    use camsrfexch,        only: cam_out_t, cam_in_t     
+---
+>    use camsrfexch_types,  only: cam_out_t, cam_in_t     
+23d22
+<    use physics_buffer,            only: physics_buffer_desc
+59,60d57
+<   type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+< 
+83d79
+<    use cam_initfiles,    only: cam_initfiles_open
+87,88c83,84
+<    use physpkg,          only: phys_init, phys_register
+<    
+---
+>    use physpkg,          only: phys_init
+>    use phys_buffer,      only: pbuf
+94c90
+<    use camsrfexch,       only: hub2atm_alloc, atm2hub_alloc
+---
+>    use camsrfexch_types, only: hub2atm_alloc, atm2hub_alloc
+99c95
+<    use cam_instance,     only: inst_suffix
+---
+> 
+125d120
+<    character(len=cs) :: filein ! Input namelist filename
+144,148c139
+<    call phys_register ()
+<    !
+<    ! Determine input namelist filename
+<    !
+<    filein = "atm_in" // trim(inst_suffix)
+---
+>    call initindx ()
+153c144
+<    call init_pio_subsystem(filein)
+---
+>    call init_pio_subsystem('atm_in')
+156,159c147,148
+< 
+<       call cam_initfiles_open()
+<       call cam_initial(dyn_in, dyn_out, NLFileName=filein)
+< 
+---
+>       call cam_initial ( dyn_in, dyn_out, NLFileName='atm_in')
+>       !
+161,162c150,152
+<       call atm2hub_alloc(cam_out)
+<       call hub2atm_alloc(cam_in)
+---
+>       !
+>       call atm2hub_alloc( cam_out )
+>       call hub2atm_alloc( cam_in )
+166c156
+<       call cam_read_restart ( cam_out, dyn_in, dyn_out, pbuf2d, stop_ymd, stop_tod, NLFileName=filein )
+---
+>       call cam_read_restart ( cam_out, dyn_in, dyn_out, stop_ymd, stop_tod, NLFileName='atm_in' )
+174,175c164
+< 
+<    call phys_init( phys_state, phys_tend, pbuf2d,  cam_out )
+---
+>    call phys_init( phys_state, phys_tend, pbuf, cam_out )
+194d182
+< 
+208c196
+<    
+---
+>    use phys_buffer,      only: pbuf
+237,238c225
+<    call stepon_run1( dtime, phys_state, phys_tend, pbuf2d, dyn_in, dyn_out )
+<    call t_stopf  ('stepon_run1')
+---
+>    call stepon_run1( dtime, phys_state, phys_tend, dyn_in, dyn_out )
+239a227,228
+> 
+>    call t_stopf  ('stepon_run1')
+247c236
+<    call phys_run1(phys_state, dtime, phys_tend, pbuf2d,  cam_in, cam_out)
+---
+>    call phys_run1(phys_state, dtime, phys_tend, pbuf, cam_in, cam_out)
+266c255
+<    
+---
+>    use phys_buffer,      only: pbuf
+279d267
+< 
+284c272
+< !   call get_met_fields( cam_in )
+---
+> !MS   call get_met_fields( cam_in )
+286c274
+<     write(*,*)'We do not use SHFLX QFLX TAUX TAUY from met data in this version'
+---
+>     write(*,*)'We do not use SHFLX QFLX TAUX TAUY from met data in this version'  
+289,290d276
+< 
+< 
+296c282
+<    call phys_run2(phys_state, dtime, phys_tend, pbuf2d,  cam_out, cam_in )
+---
+>    call phys_run2(phys_state, dtime, phys_tend, pbuf, cam_out, cam_in )
+405c391
+<          call cam_write_restart( cam_out, dyn_out, pbuf2d, &
+---
+>          call cam_write_restart( cam_out, dyn_out, &
+408c394
+<          call cam_write_restart( cam_out, dyn_out, pbuf2d )
+---
+>          call cam_write_restart( cam_out, dyn_out )
+453,454c439,440
+<    use cam_initfiles,    only: cam_initfiles_close
+<    use camsrfexch,       only: atm2hub_deallocate, hub2atm_deallocate
+---
+>    use startup_initialconds, only : close_initial_file
+>    use camsrfexch_types, only : atm2hub_deallocate, hub2atm_deallocate
+474c460
+<    call phys_final( phys_state, phys_tend , pbuf2d)
+---
+>    call phys_final( phys_state, phys_tend )
+478c464
+<       call cam_initfiles_close()
+---
+>       call close_initial_file()
+diff -r ./cam_diagnostics.F90 ../../SourceMods_NorESM1_org/src.cam/cam_diagnostics.F90
+9c9
+< use camsrfexch,    only: cam_in_t, cam_out_t
+---
+> use camsrfexch_types, only: cam_in_t, cam_out_t
+12,16d11
+< use physics_buffer, only: physics_buffer_desc, pbuf_add_field, dtype_r8, pbuf_times, &
+<                           pbuf_get_field, pbuf_get_index, pbuf_old_tim_idx
+< 
+< 
+< 
+20a16,17
+> use abortutils,    only: endrun
+> use scamMod,       only: single_column,wfld
+24,27d20
+< use time_manager,  only: is_first_step
+< 
+< use scamMod,       only: single_column, wfld
+< use abortutils,    only: endrun
+36a30,31
+>    diag_defaultopts,   &! set default values of namelist variables
+>    diag_setopts,       &! get namelist input
+47,48c42
+<    diag_physvar_ic,    &
+<    diag_readnl          ! read namelist options
+---
+>    diag_physvar_ic
+57,64c51,53
+< integer :: dqcond_num                     ! number of constituents to compute convective
+< character(len=16) :: dcconnam(pcnst)      ! names of convection tendencies
+<                                           ! tendencies for
+< real(r8), allocatable :: dtcond(:,:,:)    ! temperature tendency due to convection
+< type dqcond_t
+<    real(r8), allocatable :: cnst(:,:,:)   ! constituent tendency due to convection
+< end type dqcond_t
+< type(dqcond_t), allocatable :: dqcond(:)
+---
+> real(r8), allocatable :: &
+>    dtcond(:,:,:),  &! temperature tendency due to convection
+>    dqcond(:,:,:,:)  ! constituent tendencies due to convection
+72a62,63
+> character(len=16), public :: dcconnam(pcnst)       ! names of convection tendencies
+> 
+83c74
+< integer  ::      t_ttend_idx = 0
+---
+> integer  ::      t_ttend_idx 
+85,92c76
+< integer  ::      prec_dp_idx  = 0
+< integer  ::      snow_dp_idx  = 0
+< integer  ::      prec_sh_idx  = 0
+< integer  ::      snow_sh_idx  = 0
+< integer  ::      prec_sed_idx = 0
+< integer  ::      snow_sed_idx = 0
+< integer  ::      prec_pcw_idx = 0
+< integer  ::      snow_pcw_idx = 0
+---
+> contains
+93a78
+>   ! ===============================================================================
+95c80
+< integer :: tpert_idx=-1, qpert_idx=-1, pblh_idx=-1
+---
+>   subroutine diag_register
+97c82
+< contains
+---
+>     use phys_buffer,  only: pbuf_times, pbuf_add
+99c84
+< ! ===============================================================================
+---
+>   ! Request physics buffer space for fields that persist across timesteps.
+101,104c86
+< subroutine diag_register
+<     
+<    ! Request physics buffer space for fields that persist across timesteps.
+<    call pbuf_add_field('T_TTEND', 'global', dtype_r8, (/pcols,pver,pbuf_times/), t_ttend_idx)
+---
+>     call pbuf_add('T_TTEND',   'global',  1, pver, pbuf_times,   t_ttend_idx)
+106c88
+< end subroutine diag_register
+---
+>   end subroutine diag_register
+110,133c92,103
+< subroutine diag_readnl(nlfile)
+<   use namelist_utils,  only: find_group_name
+<   use units,           only: getunit, freeunit
+<   use mpishorthand
+<   use spmd_utils,      only: masterproc
+< 
+<   character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
+< 
+<   ! Local variables
+<   integer :: unitn, ierr
+<   character(len=*), parameter :: subname = 'diag_readnl'
+< 
+<   namelist /cam_diag_opts/ diag_cnst_conv_tend
+<   !-----------------------------------------------------------------------------
+< 
+<   if (masterproc) then
+<       unitn = getunit()
+<       open( unitn, file=trim(nlfile), status='old' )
+<       call find_group_name(unitn, 'cam_diag_opts', status=ierr)
+<       if (ierr == 0) then
+<          read(unitn, cam_diag_opts, iostat=ierr)
+<          if (ierr /= 0) then
+<             call endrun(subname // ':: ERROR reading namelist')
+<          end if
+---
+> subroutine diag_defaultopts(diag_cnst_conv_tend_out)
+> !----------------------------------------------------------------------- 
+> ! Purpose: Return default runtime options
+> !-----------------------------------------------------------------------
+> 
+>    character(len=*), intent(out), optional :: diag_cnst_conv_tend_out
+> !-----------------------------------------------------------------------
+>    if ( present(diag_cnst_conv_tend_out) ) then
+>       if (chem_is('waccm_ghg') .or. chem_is('waccm_mozart')) then
+>          diag_cnst_conv_tend_out = 'none'
+>       else
+>          diag_cnst_conv_tend_out = diag_cnst_conv_tend
+135,137c105,106
+<       close(unitn)
+<       call freeunit(unitn)
+<    end if
+---
+>    endif
+> end subroutine diag_defaultopts
+139,144c108,120
+< #ifdef SPMD
+<    ! Broadcast namelist variables
+<    call mpibcast(diag_cnst_conv_tend, len(diag_cnst_conv_tend), mpichar,  0, mpicom)
+< #endif
+<    
+< end subroutine diag_readnl
+---
+> !================================================================================================
+> 
+> subroutine diag_setopts(diag_cnst_conv_tend_in)
+> !----------------------------------------------------------------------- 
+> ! Purpose: Return default runtime options
+> !-----------------------------------------------------------------------
+> 
+>    character(len=*), intent(in), optional :: diag_cnst_conv_tend_in
+> !-----------------------------------------------------------------------
+>    if ( present(diag_cnst_conv_tend_in) ) then
+>       diag_cnst_conv_tend = diag_cnst_conv_tend_in
+>    endif
+> end subroutine diag_setopts
+148c124
+< subroutine diag_init()
+---
+> subroutine diag_init
+155a132
+>    use phys_buffer,        only: pbuf_get_fld_idx
+163d139
+<    integer :: ierr
+195d170
+<    call addfld ('Z1000   ','m       ',1,    'A','Geopotential Z at 700 mbar pressure surface',phys_decomp)
+209d183
+<    call addfld ('UQ      ','m/skg/kg',pver, 'A','Zonal water transport',phys_decomp) !!+jek added for le
+216,218c190
+<    call addfld ('WSPEED  ','m/s     ',pver, 'X','Horizontal total wind speed maximum' ,phys_decomp)
+<    call addfld ('WSPDSRFMX','m/s    ',1,    'X','Horizontal total wind speed maximum at the surface' ,phys_decomp)
+<    call addfld ('WSPDSRFAV','m/s    ',1,    'A','Horizontal total wind speed average at the surface' ,phys_decomp)
+---
+>    call addfld ('WSPEED  ','m/s     ',pver, 'X','Horizontal total wind speed' ,phys_decomp)
+227c199
+<    call addfld ('TMQ     ','kg/m2   ',1,    'A','Total (vertically integrated) precipitable water',phys_decomp)
+---
+>    call addfld ('TMQ     ','kg/m2   ',1,    'A','Total (vertically integrated) precipitatable water',phys_decomp)
+239,240c211
+<    call addfld ('Q200    ','kg/kg   ',1,    'A','Specific Humidity at 200 mbar pressure surface',phys_decomp) !long_name fixed for le +jek
+<    call addfld ('Q500    ','kg/kg   ',1,    'A','Specific Humidity at 500 mbar pressure surface',phys_decomp) !added for le +jek
+---
+>    call addfld ('Q200    ','kg/kg   ',1,    'A','Specific Humidity at 700 mbar pressure surface',phys_decomp)
+242c213
+<    call addfld ('U500    ','m/s     ',1,    'A','Zonal wind at 500 mbar pressure surface',phys_decomp)
+---
+>    call addfld ('U500    ','m/s     ',1,    'A','Zonal wind at 500 mbar pressures urface',phys_decomp)
+244d214
+<    call addfld ('U010    ','m/s     ',1,    'A','Zonal wind at  10 mbar pressure surface',phys_decomp)
+263d232
+<    call addfld ('T010       ','K     ',1,   'A','Temperature at 10 mbar pressure surface',phys_decomp)
+314a284,748
+> #ifdef AERLIFE
+> 
+>    call addfld ('C_DMS    ','kg m-2   ',1,    'A','Column burden',phys_decomp)
+>    call addfld ('C_SO2    ','kg m-2   ',1,    'A','Column burden',phys_decomp)
+>    call addfld ('C_SO4    ','kg m-2   ',1,    'A','Column burden',phys_decomp)
+>    call addfld ('C_BC     ','kg m-2   ',1,    'A','Column burden',phys_decomp)
+>    call addfld ('C_POM    ','kg m-2   ',1,    'A','Column burden',phys_decomp)
+>    call addfld ('C_SS     ','kg m-2   ',1,    'A','Column burden',phys_decomp)
+>    call addfld ('C_DUST   ','kg m-2   ',1,    'A','Column burden',phys_decomp)
+> 
+>    call addfld ('DMSCO    ','mol/mol  ',pver,    'A','Concentration',phys_decomp)
+>    call addfld ('SO2CO    ','mol/mol  ',pver,    'A','Concentration',phys_decomp)
+>    call addfld ('SO4    ','kg m-3   ',pver,    'A','Concentration',phys_decomp)
+>    call addfld ('BC     ','kg m-3   ',pver,    'A','Concentration',phys_decomp)
+>    call addfld ('POM    ','kg m-3   ',pver,    'A','Concentration',phys_decomp)
+>    call addfld ('SS     ','kg m-3   ',pver,    'A','Concentration',phys_decomp)
+>    call addfld ('DUST   ','kg m-3   ',pver,    'A','Concentration',phys_decomp)
+> 
+>    call addfld ('EMI_DMS    ','kg m-2 s-1  ',1,    'A','Emissions',phys_decomp)
+>    call addfld ('EMI_SO2    ','kg m-2 s-1  ',1,    'A','Emissions',phys_decomp)
+>    call addfld ('EMI_SO4    ','kg m-2 s-1  ',1,    'A','Emissions',phys_decomp)
+>    call addfld ('EMI_BC     ','kg m-2 s-1  ',1,    'A','Emissions',phys_decomp)
+>    call addfld ('EMI_POM    ','kg m-2 s-1  ',1,    'A','Emissions',phys_decomp)
+>    call addfld ('EMI_SS     ','kg m-2 s-1  ',1,    'A','Emissions',phys_decomp)
+>    call addfld ('EMI_DUST   ','kg m-2 s-1  ',1,    'A','Emissions',phys_decomp)
+> 
+> !   call addfld ('WET_MSA    ','kg m-2 s-1   ',1,    'A','Wet deposition',phys_decomp)
+>    call addfld ('WET_SO2    ','kg m-2 s-1   ',1,    'A','Wet deposition',phys_decomp)
+>    call addfld ('WET_SO4    ','kg m-2 s-1   ',1,    'A','Wet deposition',phys_decomp)
+>    call addfld ('WET_BC     ','kg m-2 s-1   ',1,    'A','Wet deposition',phys_decomp)
+>    call addfld ('WET_POM    ','kg m-2 s-1   ',1,    'A','Wet deposition',phys_decomp)
+>    call addfld ('WET_SS     ','kg m-2 s-1   ',1,    'A','Wet deposition',phys_decomp)
+>    call addfld ('WET_DUST   ','kg m-2 s-1   ',1,    'A','Wet deposition',phys_decomp)
+> 
+> !   call addfld ('DRY_MSA    ','kg m-2 s-1   ',1,    'A','Dry deposition',phys_decomp)
+>    call addfld ('DRY_SO2    ','kg m-2 s-1   ',1,    'A','Dry deposition',phys_decomp)
+>    call addfld ('DRY_SO4    ','kg m-2 s-1   ',1,    'A','Dry deposition',phys_decomp)
+>    call addfld ('DRY_BC     ','kg m-2 s-1   ',1,    'A','Dry deposition',phys_decomp)
+>    call addfld ('DRY_POM    ','kg m-2 s-1   ',1,    'A','Dry deposition',phys_decomp)
+>    call addfld ('DRY_SS     ','kg m-2 s-1   ',1,    'A','Dry deposition',phys_decomp)
+>    call addfld ('DRY_DUST   ','kg m-2 s-1   ',1,    'A','Dry deposition',phys_decomp)
+>    
+>    call addfld ('KHET    ','s-1     ',pver,    'A','Aqueous-phase reaction rate',phys_decomp)
+>    call addfld ('CH2O2   ','kg/kg   ',pver,    'A','H2O2 MMR from file ',phys_decomp)
+>    call addfld ('NUSO4N  ','kg/kg s-1',pver,    'A','SO4 nucleation rate' ,phys_decomp)
+> 
+> #ifdef DIRIND
+>    call addfld ('TAUE550 ','unitless',1,    'A','Aerosol optical depth at 550nm',phys_decomp)  
+>    call addfld ('TAUA550 ','unitless',1,    'A','Aerosol absorptive optical depth at 550nm',phys_decomp)
+>    call addfld ('CDODVIS ','unitless',1,    'A','Clear air aerosol optical depth',phys_decomp)  
+>    call addfld ('CABSVIS ','unitless',1,    'A','Clear air aerosol absorptive optical depth',phys_decomp)
+>    call addfld ('CLDFREE ','unitless',1,    'A','Cloud free fraction wrt CDODVIS and CABSVIS',phys_decomp)
+>    call addfld ('DAYFOC  ','unitless',1,    'A','Daylight fraction',phys_decomp)
+>    call addfld ('N_AER   ','unitless',pver, 'A','Aerosol number concentration',phys_decomp)
+>    call addfld ('N_AERORG','unitless',pver, 'A','Aerosol number concentration',phys_decomp)
+>    call addfld ('WAK     ','unitless',pver, 'A','Aerosol single scattering albedo',phys_decomp)    
+>    call addfld ('GAK     ','unitless',pver, 'A','Aerosol assymetry factor',phys_decomp)    
+>    call addfld ('BAK     ','1/km    ',pver, 'A','Aerosol extinction',phys_decomp)     
+>    call addfld ('AKCXS   ','mg/m2   ',1,    'A','Scheme excess aerosol mass burden',phys_decomp)     
+>    call addfld ('CDNC    ','1/CM3   ',pver, 'A','Cloud Droplet Number Concentration',phys_decomp)
+>    call addfld ('CLDFOC  ','FRACTION',pver, 'A','Frequency of Warm Cloud Occurence',phys_decomp)
+>    call addfld ('REFFL   ','uM      ',pver, 'A','Effective Radius of Cloud Droplets',phys_decomp)
+>    call addfld ('REHANA  ','uM      ',1,    'A','Effective radius as seen from satellite',phys_decomp)
+>    call addfld ('FOCHANA ','FRACTION',1,    'A','Frequency of Occurrence of Clouds with REHANA /= 0',phys_decomp)
+>    call addfld ('RELH    ','unitless',pver, 'A','Fictive relative humidity',phys_decomp)
+> !#define DIAGNCDNC
+> #ifndef DIAGNCDNC
+>    call addfld ('SUPERSAT','percent ',pver, 'A','Supersaturation from AGR schem',phys_decomp)
+>    call addfld ('NUCRAT  ','cm-3s-1 ',pver, 'A','Nucleation of cloud droplets',phys_decomp)
+>    call addfld ('SELFX   ','cm-3s-1 ',pver, 'A','Selfcollection of cloud droplets',phys_decomp)
+>    call addfld ('EVAPX   ','cm-3s-1 ',pver, 'A','Evaporation of cloud droplets ',phys_decomp)
+>    call addfld ('FREEZ   ','cm-3s-1 ',pver, 'A',' rate of freezing of cloud droplets',phys_decomp)
+>    call addfld ('NRAINX  ','cm-3s-1 ',pver, 'A','Loss of cloud droplets due to precip '   ,phys_decomp)
+>    call addfld ('CDNCINT ','1/CM2   ',1,    'A','Cloud Droplet Number Column',phys_decomp)
+> #endif
+> !#define AEROCOM
+> !#define AEROFFL 
+> #ifdef AEROFFL
+>    call addfld ('FSNT_DRF','W/m^2   ',1,    'A','Total column absorbed solar flux (DIRind)' ,phys_decomp)
+>    call addfld ('FSNTCDRF','W/m^2   ',1,    'A','Clear sky total column absorbed solar flux (DIRind)' ,phys_decomp)
+>    call addfld ('FSNS_DRF','W/m^2   ',1,    'A','Surface absorbed solar flux (DIRind)' ,phys_decomp)
+>    call addfld ('FSNSCDRF','W/m^2   ',1,    'A','Clear sky surface absorbed solar flux (DIRind)' ,phys_decomp)
+>    call addfld ('QRS_DRF ','K/s     ',pver, 'A','Solar heating rate (DIRind)' ,phys_decomp)
+>    call addfld ('QRSC_DRF','K/s     ',pver, 'A','Clearsky solar heating rate (DIRind)' ,phys_decomp)
+>    call addfld ('FSNT_AIE','W/m^2   ',1,    'A','Total column absorbed solar flux (dirIND)' ,phys_decomp)
+>    call addfld ('FLNT_AIE','W/m^2   ',1,    'A','Total column longwave flux (dirIND)' ,phys_decomp)
+>    call addfld ('FSNTCAIE','W/m^2   ',1,    'A','Clear sky total column absorbed solar flux (dirIND)' ,phys_decomp)
+>    call addfld ('FSNS_AIE','W/m^2   ',1,    'A','Surface absorbed solar flux (dirIND)' ,phys_decomp)
+>    call addfld ('FSNSCAIE','W/m^2   ',1,    'A','Clear sky surface absorbed solar flux (dirIND)' ,phys_decomp)
+>    call addfld ('QRS_AIE ','K/s     ',pver, 'A','Solar heating rate (dirIND)' ,phys_decomp)
+>    call addfld ('QRSC_AIE','K/s     ',pver, 'A','Clearsky solar heating rate (dirIND)' ,phys_decomp)
+> #ifdef AEROCOM 
+>    call addfld ('FSUTADRF','W/m^2   ',1,    'A','SW upwelling flux at TOA',phys_decomp)
+>    call addfld ('FSDS_DRF','W/m^2   ',1,    'A','SW downelling flux at surface',phys_decomp)
+>    call addfld ('FSUS_DRF','W/m^2   ',1,    'A','SW upwelling flux at surface',phys_decomp)
+>    call addfld ('FSDSCDRF','W/m^2   ',1,    'A','SW downwelling clear sky flux at surface',phys_decomp)
+>    call addfld ('FLUS    ','W/m^2   ',1,    'A','LW surface upwelling flux',phys_decomp)
+> #endif  ! aerocom
+> #endif  ! aeroffl
+> #ifdef AEROCOM 
+>       call addfld ('GRIDAREA','m2      ',1,    'A','Grid area for 1.9x2.5 horizontal resolution',phys_decomp)
+>       call addfld ('DAERH2O ','mg/m2   ',1,    'A','Aerosol water load',phys_decomp)
+>       call addfld ('MMR_AH2O','kg/kg   ',pver, 'A','Aerosol water mmr',phys_decomp)
+>       call addfld ('ECDRYAER','m-1     ',pver, 'A','Dry aerosol extinction at 550nm',phys_decomp)  
+>       call addfld ('ABSDRYAE','m-1     ',pver, 'A','Dry aerosol absorption at 550nm',phys_decomp)  
+>       call addfld ('OD550DRY','unitless',1,    'A','Dry aerosol optical depth at 550nm',phys_decomp)  
+>       call addfld ('AB550DRY','unitless',1,    'A','Dry aerosol absorptive optical depth at 550nm',phys_decomp)   
+>       call addfld ('DERLT05 ','um      ',1,    'A','Effective aerosol dry radius<0.5um',phys_decomp)
+>       call addfld ('DERGT05 ','um      ',1,    'A','Effective aerosol dry radius>0.5um',phys_decomp) 
+>       call addfld ('DER     ','um      ',1,    'A','Effective aerosol dry radius',phys_decomp) 
+>       call addfld ('DOD440  ','unitless',1,    'A','Aerosol optical depth at 440nm',phys_decomp)  
+> !      call addfld ('ABS440  ','unitless',1,    'A','Aerosol absorptive optical depth at 440nm',phys_decomp)   
+>       call addfld ('DOD500  ','unitless',1,    'A','Aerosol optical depth at 500nm',phys_decomp)  
+> !      call addfld ('ABS500  ','unitless',1,    'A','Aerosol absorptive optical depth at 500nm',phys_decomp)   
+>       call addfld ('DOD550  ','unitless',1,    'A','Aerosol optical depth at 550nm',phys_decomp)  
+>       call addfld ('ABS550  ','unitless',1,    'A','Aerosol absorptive optical depth at 550nm',phys_decomp)   
+>       call addfld ('ABS550AL','unitless',1,    'A','Alt. aerosol absorptive optical depth at 550nm',phys_decomp)   
+>       call addfld ('DOD670  ','unitless',1,    'A','Aerosol optical depth at 670nm',phys_decomp)  
+> !      call addfld ('ABS670  ','unitless',1,    'A','Aerosol absorptive optical depth at 870nm',phys_decomp)   
+>       call addfld ('DOD870  ','unitless',1,    'A','Aerosol optical depth at 670nm',phys_decomp)  
+> !      call addfld ('ABS870  ','unitless',1,    'A','Aerosol absorptive optical depth at 870nm',phys_decomp)   
+>       call addfld ('DLOAD_MI','mg/m2   ',1,    'A','mineral aerosol load',phys_decomp)     
+>       call addfld ('DLOAD_SS','mg/m2   ',1,    'A','sea-salt aerosol load',phys_decomp)     
+>       call addfld ('EC550AER','m-1     ',pver, 'A','aerosol extinction coefficient',phys_decomp)     
+>       call addfld ('ABS550_A','m-1     ',pver, 'A','aerosol absorption coefficient',phys_decomp)     
+>       call addfld ('BS550AER','m-1 sr-1',pver, 'A','aerosol backscatter coefficient',phys_decomp)     
+>       call addfld ('CDOD550  ','unitless',1,    'A','Clear air Aerosol optical depth at 550nm',phys_decomp)  
+>       call addfld ('CABS550  ','unitless',1,    'A','Clear air Aerosol abs optical depth at 550nm',phys_decomp)  
+>       call addfld ('CABS550A ','unitless',1,    'A','Clear air Aerosol abs optical depth at 550nm',phys_decomp)  
+>       call addfld ('CDOD870 ','unitless',1,    'A','Clear air Aerosol optical depth at 870nm',phys_decomp)  
+>       call addfld ('A550_DU ','unitless',1,    'A','mineral abs. aerosol optical depth 550nm',phys_decomp)     
+>       call addfld ('A550_SS ','unitless',1,    'A','sea-salt abs aerosol optical depth 550nm',phys_decomp)     
+>       call addfld ('A550_SO4','unitless',1,    'A','SO4 aerosol abs. optical depth 550nm',phys_decomp)     
+>       call addfld ('A550_POM','unitless',1,    'A','OC abs. aerosol optical depth 550nm',phys_decomp)     
+>       call addfld ('A550_BC ','unitless',1,    'A','BC abs. aerosol optical depth 550nm',phys_decomp)
+>       call addfld ('ABS5503D','unitless',pver,    'A','aerosol 3d abs. optical depth 550nm',phys_decomp)
+> !-      call addfld ('D443_DU ','unitless',pver,    'A','mineral aerosol 3d optical depth 440nm',phys_decomp)     
+> !-      call addfld ('D443_SS ','unitless',pver,    'A','sea-salt aerosol 3d optical depth 440nm',phys_decomp)     
+> !-      call addfld ('D443_SO4','unitless',pver,    'A','SO4 aerosol 3d optical depth 440nm',phys_decomp)     
+> !-      call addfld ('D443_POM','unitless',pver,    'A','OC aerosol 3d optical depth 440nm',phys_decomp)     
+> !-      call addfld ('D443_BC ','unitless',pver,    'A','BC aerosol 3d optical depth 440nm',phys_decomp)
+> !-      call addfld ('D503_DU ','unitless',pver,    'A','mineral aerosol 3d optical depth 500nm',phys_decomp)     
+> !-      call addfld ('D503_SS ','unitless',pver,    'A','sea-salt aerosol 3d optical depth 500nm',phys_decomp)     
+> !-      call addfld ('D503_SO4','unitless',pver,    'A','SO4 aerosol 3d optical depth 500nm',phys_decomp)     
+> !-      call addfld ('D503_POM','unitless',pver,    'A','OC aerosol 3d optical depth 500nm',phys_decomp)     
+> !-      call addfld ('D503_BC ','unitless',pver,    'A','BC aerosol 3d optical depth 500nm',phys_decomp)
+>       call addfld ('D553_DU ','unitless',pver,    'A','mineral aerosol 3d optical depth 550nm',phys_decomp)     
+>       call addfld ('D553_SS ','unitless',pver,    'A','sea-salt aerosol 3d optical depth 550nm',phys_decomp)     
+>       call addfld ('D553_SO4','unitless',pver,    'A','SO4 aerosol 3d optical depth 550nm',phys_decomp)     
+>       call addfld ('D553_POM','unitless',pver,    'A','OC aerosol 3d optical depth 550nm',phys_decomp)     
+>       call addfld ('D553_BC ','unitless',pver,    'A','BC aerosol 3d optical depth 550nm',phys_decomp)
+> !-      call addfld ('D673_DU ','unitless',pver,    'A','mineral aerosol 3d optical depth 670nm',phys_decomp)     
+> !-      call addfld ('D673_SS ','unitless',pver,    'A','sea-salt aerosol 3d optical depth 670nm',phys_decomp)     
+> !-      call addfld ('D673_SO4','unitless',pver,    'A','SO4 aerosol 3d optical depth 670nm',phys_decomp)     
+> !-      call addfld ('D673_POM','unitless',pver,    'A','OC aerosol 3d optical depth 670nm',phys_decomp)     
+> !-      call addfld ('D673_BC ','unitless',pver,    'A','BC aerosol 3d optical depth 670nm',phys_decomp)
+> !-      call addfld ('D873_DU ','unitless',pver,    'A','mineral aerosol 3d optical depth 870nm',phys_decomp)     
+> !-      call addfld ('D873_SS ','unitless',pver,    'A','sea-salt aerosol 3d optical depth 870nm',phys_decomp)     
+> !-      call addfld ('D873_SO4','unitless',pver,    'A','SO4 aerosol 3d optical depth 870nm',phys_decomp)     
+> !-      call addfld ('D873_POM','unitless',pver,    'A','OC aerosol 3d optical depth 870nm',phys_decomp)     
+> !-      call addfld ('D873_BC ','unitless',pver,    'A','BC aerosol 3d optical depth 870nm',phys_decomp)
+>       call addfld ('D440_DU ','unitless',1,    'A','mineral aerosol optical depth 440nm',phys_decomp)     
+>       call addfld ('D440_SS ','unitless',1,    'A','sea-salt aerosol optical depth 440nm',phys_decomp)     
+>       call addfld ('D440_SO4','unitless',1,    'A','SO4 aerosol optical depth 440nm',phys_decomp)     
+>       call addfld ('D440_POM','unitless',1,    'A','OC aerosol optical depth 440nm',phys_decomp)     
+>       call addfld ('D440_BC ','unitless',1,    'A','BC aerosol optical depth 440nm',phys_decomp)     
+>       call addfld ('D500_DU ','unitless',1,    'A','mineral aerosol optical depth 500nm',phys_decomp)     
+>       call addfld ('D500_SS ','unitless',1,    'A','sea-salt aerosol optical depth 500nm',phys_decomp)     
+>       call addfld ('D500_SO4','unitless',1,    'A','SO4 aerosol optical depth 500nm',phys_decomp)     
+>       call addfld ('D500_POM','unitless',1,    'A','OC aerosol optical depth 500nm',phys_decomp)     
+>       call addfld ('D500_BC ','unitless',1,    'A','BC aerosol optical depth 500nm',phys_decomp)     
+>       call addfld ('D550_DU ','unitless',1,    'A','mineral aerosol optical depth 550nm',phys_decomp)     
+>       call addfld ('D550_SS ','unitless',1,    'A','sea-salt aerosol optical depth 550nm',phys_decomp)     
+>       call addfld ('D550_SO4','unitless',1,    'A','SO4 aerosol optical depth 550nm',phys_decomp)     
+>       call addfld ('D550_POM','unitless',1,    'A','OC aerosol optical depth 550nm',phys_decomp)     
+>       call addfld ('D550_BC ','unitless',1,    'A','BC aerosol optical depth 550nm',phys_decomp)     
+>       call addfld ('D670_DU ','unitless',1,    'A','mineral aerosol optical depth 670nm',phys_decomp)     
+>       call addfld ('D670_SS ','unitless',1,    'A','sea-salt aerosol optical depth 670nm',phys_decomp)     
+>       call addfld ('D670_SO4','unitless',1,    'A','SO4 aerosol optical depth 670nm',phys_decomp)     
+>       call addfld ('D670_POM','unitless',1,    'A','OC aerosol optical depth 670nm',phys_decomp)     
+>       call addfld ('D670_BC ','unitless',1,    'A','BC aerosol optical depth 670nm',phys_decomp)     
+>       call addfld ('D870_DU ','unitless',1,    'A','mineral aerosol optical depth 870nm',phys_decomp)     
+>       call addfld ('D870_SS ','unitless',1,    'A','sea-salt aerosol optical depth 870nm',phys_decomp)     
+>       call addfld ('D870_SO4','unitless',1,    'A','SO4 aerosol optical depth 870nm',phys_decomp)     
+>       call addfld ('D870_POM','unitless',1,    'A','OC aerosol optical depth 870nm',phys_decomp)     
+>       call addfld ('D870_BC ','unitless',1,    'A','BC aerosol optical depth 870nm',phys_decomp)     
+>       call addfld ('DLT_DUST','unitless',1,    'A','mineral aerosol optical depth 550nm lt05',phys_decomp)     
+>       call addfld ('DLT_SS  ','unitless',1,    'A','sea-salt aerosol optical depth 550nm lt05',phys_decomp)     
+>       call addfld ('DLT_SO4 ','unitless',1,    'A','SO4 aerosol optical depth 550nm lt05',phys_decomp)     
+>       call addfld ('DLT_POM ','unitless',1,    'A','OC aerosol optical depth 550nm lt05',phys_decomp)     
+>       call addfld ('DLT_BC  ','unitless',1,    'A','BC aerosol optical depth 550nm lt05',phys_decomp)     
+>       call addfld ('DGT_DUST','unitless',1,    'A','mineral aerosol optical depth 550nm gt05',phys_decomp)     
+>       call addfld ('DGT_SS  ','unitless',1,    'A','sea-salt aerosol optical depth 550nm gt05',phys_decomp)     
+>       call addfld ('DGT_SO4 ','unitless',1,    'A','SO4 aerosol optical depth 550nm gt05',phys_decomp)     
+>       call addfld ('DGT_POM ','unitless',1,    'A','OC aerosol optical depth 550nm gt05',phys_decomp)     
+>       call addfld ('DGT_BC  ','unitless',1,    'A','BC aerosol optical depth 550nm gt05',phys_decomp)     
+>       call addfld ('NNAT_0  ','1/cm3   ',pver, 'A','Aerosol mode 0 number concentration',phys_decomp)     
+>       call addfld ('NNAT_1  ','1/cm3   ',pver, 'A','Aerosol mode 1 number concentration',phys_decomp)     
+>       call addfld ('NNAT_2  ','1/cm3   ',pver, 'A','Aerosol mode 2 number concentration',phys_decomp)     
+>       call addfld ('NNAT_4  ','1/cm3   ',pver, 'A','Aerosol mode 4 number concentration',phys_decomp)     
+>       call addfld ('NNAT_5  ','1/cm3   ',pver, 'A','Aerosol mode 5 number concentration',phys_decomp)     
+>       call addfld ('NNAT_6  ','1/cm3   ',pver, 'A','Aerosol mode 6 number concentration',phys_decomp)     
+>       call addfld ('NNAT_7  ','1/cm3   ',pver, 'A','Aerosol mode 7 number concentration',phys_decomp)     
+>       call addfld ('NNAT_8  ','1/cm3   ',pver, 'A','Aerosol mode 8 number concentration',phys_decomp)     
+>       call addfld ('NNAT_9  ','1/cm3   ',pver, 'A','Aerosol mode 9 number concentration',phys_decomp)     
+>       call addfld ('NNAT_10 ','1/cm3   ',pver, 'A','Aerosol mode 10 number concentration',phys_decomp)     
+>       call addfld ('NNAT_11 ','1/cm3   ',pver, 'A','Aerosol mode 11 number concentration',phys_decomp)     
+>       call addfld ('NNAT_12 ','1/cm3   ',pver, 'A','Aerosol mode 12 number concentration',phys_decomp)     
+>       call addfld ('NNAT_13 ','1/cm3   ',pver, 'A','Aerosol mode 13 number concentration',phys_decomp)     
+>       call addfld ('NNAT_14 ','1/cm3   ',pver, 'A','Aerosol mode 14 number concentration',phys_decomp)     
+>       call addfld ('AIRMASS ','kg/m3   ',pver, 'A','Layer airmass',phys_decomp)     
+> !-      call addfld ('C_BCPM  ','ug C/m3 ',pver, 'A',' BC concentration' ,phys_decomp)    
+> !-      call addfld ('C_BC05  ','ug C/m3 ',pver, 'A',' BC concentration < 0.5um' ,phys_decomp)    
+> !-      call addfld ('C_BC125 ','ug C/m3 ',pver, 'A',' BC concentration > 1.25um' ,phys_decomp)    
+> !-      call addfld ('C_OCPM  ','ug C/m3 ',pver, 'A',' OC concentration' ,phys_decomp)    
+> !-      call addfld ('C_OC05  ','ug C/m3 ',pver, 'A',' OC concentration < 0.5um' ,phys_decomp)    
+> !-      call addfld ('C_OC125 ','ug C/m3 ',pver, 'A',' OC concentration > 1.25um' ,phys_decomp)    
+> !-      call addfld ('C_S4PM  ','ug C/m3 ',pver, 'A',' SO4 concentration' ,phys_decomp)    
+> !-      call addfld ('C_S405  ','ug C/m3 ',pver, 'A',' SO4 concentration < 0.5um' ,phys_decomp)    
+> !-      call addfld ('C_S4125 ','ug C/m3 ',pver, 'A',' SO4 concentration > 1.25um' ,phys_decomp)    
+> !-      call addfld ('C_MIPM  ','ug C/m3 ',pver, 'A',' dust concentration' ,phys_decomp)    
+> !-      call addfld ('C_MI05  ','ug C/m3 ',pver, 'A',' dust concentration < 0.5um' ,phys_decomp)    
+> !-      call addfld ('C_MI125 ','ug C/m3 ',pver, 'A',' dust concentration > 1.25um' ,phys_decomp)    
+> !-      call addfld ('C_SSPM  ','ug C/m3 ',pver, 'A',' sea-salt concentration' ,phys_decomp)    
+> !-      call addfld ('C_SS05  ','ug C/m3 ',pver, 'A',' sea-salt concentration < 0.5um' ,phys_decomp)    
+> !-      call addfld ('C_SS125 ','ug C/m3 ',pver, 'A',' sea-salt concentration > 1.25um' ,phys_decomp)    
+>       call addfld ('BETOT550','unitless',pver, 'A','Aerosol 3d optical depth at 550nm',phys_decomp)  
+>       call addfld ('BATOT550','unitless',pver, 'A','Aerosol 3d absorptive optical depth at 550nm',phys_decomp)   
+> #endif  ! aerocom
+> #endif  ! dirind
+> 
+> #endif  ! aerlife
+> #ifdef AERLIFE
+> 
+>    call add_default('DMSCO    ', 1,'  ')
+> !   call add_default('MSA    ', 1,'  ')
+>    call add_default('SO2CO    ', 1,'  ')
+>    call add_default('SO4    ', 1,'  ')
+>    call add_default('BC     ', 1,'  ')
+>    call add_default('POM    ', 1,'  ')
+>    call add_default('SS     ', 1,'  ')
+>    call add_default('DUST   ', 1,'  ')
+> 
+>    call add_default('C_DMS    ', 1,'  ')
+> !   call add_default('C_MSA    ', 1,'  ')
+>    call add_default('C_SO2    ', 1,'  ')
+>    call add_default('C_SO4    ', 1,'  ')
+>    call add_default('C_BC     ', 1,'  ')
+>    call add_default('C_POM    ', 1,'  ')
+>    call add_default('C_SS     ', 1,'  ')
+>    call add_default('C_DUST   ', 1,'  ')
+> 
+>    call add_default('EMI_DMS    ', 1,'  ')
+>    call add_default('EMI_SO2    ', 1,'  ')
+>    call add_default('EMI_SO4    ', 1,'  ')
+>    call add_default('EMI_BC     ', 1,'  ')
+>    call add_default('EMI_POM    ', 1,'  ')
+>    call add_default('EMI_SS     ', 1,'  ')
+>    call add_default('EMI_DUST   ', 1,'  ')
+> 
+> !   call add_default('WET_MSA    ', 1,'  ')
+>    call add_default('WET_SO2    ', 1,'  ')
+>    call add_default('WET_SO4    ', 1,'  ')
+>    call add_default('WET_BC     ', 1,'  ')
+>    call add_default('WET_POM    ', 1,'  ')
+>    call add_default('WET_SS     ', 1,'  ')
+>    call add_default('WET_DUST   ', 1,'  ')
+> 
+> !   call add_default('DRY_MSA    ', 1,'  ')
+>    call add_default('DRY_SO2    ', 1,'  ')
+>    call add_default('DRY_SO4    ', 1,'  ')
+>    call add_default('DRY_BC     ', 1,'  ')
+>    call add_default('DRY_POM    ', 1,'  ')
+>    call add_default('DRY_SS     ', 1,'  ')
+>    call add_default('DRY_DUST   ', 1,'  ')
+> 
+>    call add_default ('KHET    ', 1, ' ')
+>    call add_default ('CH2O2   ', 1, ' ')
+>    call add_default ('NUSO4N  ', 1, ' ')
+> 
+> #ifdef DIRIND
+>    call add_default ('TAUE550 ', 1, ' ')
+>    call add_default ('TAUA550 ', 1, ' ')
+>    call add_default ('DAYFOC  ', 1, ' ')
+>    call add_default ('CDODVIS ', 1, ' ')
+>    call add_default ('CABSVIS ', 1, ' ')
+>    call add_default ('CLDFREE ', 1, ' ')
+>    call add_default ('N_AER   ', 1, ' ')
+>    call add_default ('N_AERORG', 1, ' ')
+>    call add_default ('WAK     ', 1, ' ')
+>    call add_default ('GAK     ', 1, ' ')
+>    call add_default ('BAK     ', 1, ' ')
+>    call add_default ('AKCXS   ', 1, ' ')
+>    call add_default ('CDNC    ', 1, ' ')
+>    call add_default ('CLDFOC  ', 1, ' ')
+>    call add_default ('REFFL   ', 1, ' ')
+>    call add_default ('REHANA  ', 1, ' ')
+>    call add_default ('FOCHANA ', 1, ' ')
+>    call add_default ('RELH    ', 1, ' ')
+> !#define DIAGNCDNC
+> #ifndef DIAGNCDNC
+>    call add_default ('SUPERSAT', 1, ' ')
+>    call add_default ('NUCRAT  ', 1, ' ')
+>    call add_default ('SELFX   ', 1, ' ')
+>    call add_default ('EVAPX   ', 1, ' ')
+>    call add_default ('NRAINX  ', 1, ' ')
+>    call add_default ('FREEZ   ', 1, ' ')
+>    call add_default ('CDNCINT ', 1, ' ')
+> #endif
+> #ifdef AEROFFL
+>    call add_default ('FSNT_DRF', 1, ' ')
+>    call add_default ('FSNTCDRF', 1, ' ')
+>    call add_default ('FSNS_DRF', 1, ' ')
+>    call add_default ('FSNSCDRF', 1, ' ')
+>    call add_default ('QRS_DRF ', 1, ' ')
+>    call add_default ('QRSC_DRF', 1, ' ')
+>    call add_default ('FSNT_AIE', 1, ' ')
+>    call add_default ('FLNT_AIE', 1, ' ')
+>    call add_default ('FSNTCAIE', 1, ' ')
+>    call add_default ('FSNS_AIE', 1, ' ')
+>    call add_default ('FSNSCAIE', 1, ' ')
+>    call add_default ('QRS_AIE ', 1, ' ')
+>    call add_default ('QRSC_AIE', 1, ' ')
+> #ifdef AEROCOM 
+>    call add_default ('FSUTADRF', 1, ' ')
+>    call add_default ('FSDS_DRF', 1, ' ')
+>    call add_default ('FSUS_DRF', 1, ' ')
+>    call add_default ('FSDSCDRF', 1, ' ')
+>    call add_default ('FLUS    ', 1, ' ')
+> #endif  ! aerocom
+> #endif  ! aeroffl
+> #ifdef AEROCOM 
+>       call add_default ('GRIDAREA', 1, ' ')
+>       call add_default ('DAERH2O ', 1, ' ')
+>       call add_default ('MMR_AH2O', 1, ' ')
+>       call add_default ('ECDRYAER', 1, ' ')
+>       call add_default ('ABSDRYAE', 1, ' ')
+>       call add_default ('OD550DRY', 1, ' ')
+>       call add_default ('AB550DRY', 1, ' ')
+>       call add_default ('DERLT05 ', 1, ' ')
+>       call add_default ('DERGT05 ', 1, ' ')
+>       call add_default ('DER     ', 1, ' ')
+>       call add_default ('DOD440  ', 1, ' ')
+> !      call add_default ('ABS440  ', 1, ' ')
+>       call add_default ('DOD500  ', 1, ' ')
+> !      call add_default ('ABS500  ', 1, ' ')
+>       call add_default ('DOD550  ', 1, ' ')
+>       call add_default ('ABS550  ', 1, ' ')
+>       call add_default ('ABS550AL', 1, ' ')
+>       call add_default ('DOD670  ', 1, ' ')
+> !      call add_default ('ABS670  ', 1, ' ')
+>       call add_default ('DOD870  ', 1, ' ')
+> !      call add_default ('ABS870  ', 1, ' ')
+>       call add_default ('DLOAD_MI', 1, ' ')
+>       call add_default ('DLOAD_SS', 1, ' ')
+>       call add_default ('EC550AER', 1, ' ')
+>       call add_default ('ABS550_A', 1, ' ')
+>       call add_default ('BS550AER', 1, ' ')
+>       call add_default ('CDOD550 ', 1, ' ')
+>       call add_default ('CABS550 ', 1, ' ')
+>       call add_default ('CABS550A', 1, ' ')
+>       call add_default ('CDOD870 ', 1, ' ')
+>       call add_default ('A550_DU ', 1, ' ')
+>       call add_default ('A550_SS ', 1, ' ')
+>       call add_default ('A550_SO4', 1, ' ')
+>       call add_default ('A550_POM', 1, ' ')
+>       call add_default ('A550_BC ', 1, ' ')
+>       call add_default ('ABS5503D', 1, ' ')
+> !-      call add_default ('D443_DU ', 1, ' ')
+> !-      call add_default ('D443_SS ', 1, ' ')
+> !-      call add_default ('D443_SO4', 1, ' ')
+> !-      call add_default ('D443_POM', 1, ' ')
+> !-      call add_default ('D443_BC ', 1, ' ')
+> !-      call add_default ('D503_DU ', 1, ' ')
+> !-      call add_default ('D503_SS ', 1, ' ')
+> !-      call add_default ('D503_SO4', 1, ' ')
+> !-      call add_default ('D503_POM', 1, ' ')
+> !-      call add_default ('D503_BC ', 1, ' ')
+>       call add_default ('D553_DU ', 1, ' ')
+>       call add_default ('D553_SS ', 1, ' ')
+>       call add_default ('D553_SO4', 1, ' ')
+>       call add_default ('D553_POM', 1, ' ')
+>       call add_default ('D553_BC ', 1, ' ')
+> !-      call add_default ('D673_DU ', 1, ' ')
+> !-      call add_default ('D673_SS ', 1, ' ')
+> !-      call add_default ('D673_SO4', 1, ' ')
+> !-      call add_default ('D673_POM', 1, ' ')
+> !-      call add_default ('D673_BC ', 1, ' ')
+> !-      call add_default ('D873_DU ', 1, ' ')
+> !-      call add_default ('D873_SS ', 1, ' ')
+> !-      call add_default ('D873_SO4', 1, ' ')
+> !-      call add_default ('D873_POM', 1, ' ')
+> !-      call add_default ('D873_BC ', 1, ' ')
+>       call add_default ('D440_DU ', 1, ' ')
+>       call add_default ('D440_SS ', 1, ' ')
+>       call add_default ('D440_SO4', 1, ' ')
+>       call add_default ('D440_POM', 1, ' ')
+>       call add_default ('D440_BC ', 1, ' ')
+>       call add_default ('D500_DU ', 1, ' ')
+>       call add_default ('D500_SS ', 1, ' ')
+>       call add_default ('D500_SO4', 1, ' ')
+>       call add_default ('D500_POM', 1, ' ')
+>       call add_default ('D500_BC ', 1, ' ')
+>       call add_default ('D550_DU ', 1, ' ')
+>       call add_default ('D550_SS ', 1, ' ')
+>       call add_default ('D550_SO4', 1, ' ')
+>       call add_default ('D550_POM', 1, ' ')
+>       call add_default ('D550_BC ', 1, ' ')
+>       call add_default ('D670_DU ', 1, ' ')
+>       call add_default ('D670_SS ', 1, ' ')
+>       call add_default ('D670_SO4', 1, ' ')
+>       call add_default ('D670_POM', 1, ' ')
+>       call add_default ('D670_BC ', 1, ' ')
+>       call add_default ('D870_DU ', 1, ' ')
+>       call add_default ('D870_SS ', 1, ' ')
+>       call add_default ('D870_SO4', 1, ' ')
+>       call add_default ('D870_POM', 1, ' ')
+>       call add_default ('D870_BC ', 1, ' ')
+>       call add_default ('DLT_DUST', 1, ' ')
+>       call add_default ('DLT_SS  ', 1, ' ')
+>       call add_default ('DLT_SO4 ', 1, ' ')
+>       call add_default ('DLT_POM ', 1, ' ')
+>       call add_default ('DLT_BC  ', 1, ' ')
+>       call add_default ('DGT_DUST', 1, ' ')
+>       call add_default ('DGT_SS  ', 1, ' ')
+>       call add_default ('DGT_SO4 ', 1, ' ')
+>       call add_default ('DGT_POM ', 1, ' ')
+>       call add_default ('DGT_BC  ', 1, ' ')
+>       call add_default ('NNAT_0  ', 1, ' ')
+>       call add_default ('NNAT_1  ', 1, ' ')
+>       call add_default ('NNAT_2  ', 1, ' ')
+>       call add_default ('NNAT_4  ', 1, ' ')
+>       call add_default ('NNAT_5  ', 1, ' ')
+>       call add_default ('NNAT_6  ', 1, ' ')
+>       call add_default ('NNAT_7  ', 1, ' ')
+>       call add_default ('NNAT_8  ', 1, ' ')
+>       call add_default ('NNAT_9  ', 1, ' ')
+>       call add_default ('NNAT_10 ', 1, ' ')
+>       call add_default ('NNAT_11 ', 1, ' ')
+>       call add_default ('NNAT_12 ', 1, ' ')
+>       call add_default ('NNAT_13 ', 1, ' ')
+>       call add_default ('NNAT_14 ', 1, ' ')
+>       call add_default ('AIRMASS ', 1, ' ')
+> !-      call add_default ('C_BCPM  ', 1, ' ')
+> !-      call add_default ('C_BC05  ', 1, ' ')
+> !-      call add_default ('C_BC125 ', 1, ' ')
+> !-      call add_default ('C_OCPM  ', 1, ' ')
+> !-      call add_default ('C_OC05  ', 1, ' ')
+> !-      call add_default ('C_OC125 ', 1, ' ')
+> !-      call add_default ('C_S4PM  ', 1, ' ')
+> !-      call add_default ('C_S405  ', 1, ' ')
+> !-      call add_default ('C_S4125 ', 1, ' ')
+> !-      call add_default ('C_MIPM  ', 1, ' ')
+> !-      call add_default ('C_MI05  ', 1, ' ')
+> !-      call add_default ('C_MI125 ', 1, ' ')
+> !-      call add_default ('C_SSPM  ', 1, ' ')
+> !-      call add_default ('C_SS05  ', 1, ' ')
+> !-      call add_default ('C_SS125 ', 1, ' ')
+>       call add_default ('BETOT550', 1, ' ')
+>       call add_default ('BATOT550', 1, ' ')
+> #endif  ! aerocom
+> #endif  ! dirind
+> 
+> #endif  ! aerlife
+> 
+339c773
+<    if (chem_is('waccm_ghg') .or. chem_is('waccm_mozart') .or. chem_is('waccm_mozart_mam3')) then
+---
+>    if (chem_is('waccm_ghg') .or. chem_is('waccm_mozart')) then
+353,363c787
+< 
+<    ! determine number of constituents for which convective tendencies must be computed
+<    if (history_budget) then
+<       dqcond_num = pcnst
+<    else
+<       if (diag_cnst_conv_tend == 'none')   dqcond_num = 0
+<       if (diag_cnst_conv_tend == 'q_only') dqcond_num = 1
+<       if (diag_cnst_conv_tend == 'all')    dqcond_num = pcnst
+<    end if
+< 
+<    do m = 1, dqcond_num
+---
+>    do m = 1, pcnst
+366d789
+< 
+387d809
+< 
+391,392d812
+<    call addfld ('PREC_PCW','m/s     ',1,    'A','LS_pcw precipitation rate',phys_decomp)
+<    call addfld ('PREC_zmc','m/s     ',1,    'A','CV_zmc precipitation rate',phys_decomp)
+419a840,841
+>    call addfld ('UAS     ','m/s     ',1,    'A','Eastward 10m wind',phys_decomp)
+>    call addfld ('VAS     ','m/s     ',1,    'A','Northward 10m wind',phys_decomp)
+454a877,878
+>    call add_default ('UAS     ', 1, ' ')
+>    call add_default ('VAS     ', 1, ' ')
+506d929
+< 
+581c1004
+<   if (chem_is('waccm_ghg') .or. chem_is('waccm_mozart') .or. chem_is('waccm_mozart_mam3')) then
+---
+>   if (chem_is('waccm_ghg') .or. chem_is('waccm_mozart')) then
+590,594c1013,1021
+<   qcwat_idx  = pbuf_get_index('QCWAT',ierr)
+<   tcwat_idx  = pbuf_get_index('TCWAT',ierr)
+<   lcwat_idx  = pbuf_get_index('LCWAT',ierr)
+<   cld_idx    = pbuf_get_index('CLD')
+<   concld_idx = pbuf_get_index('CONCLD')
+---
+>       qcwat_idx  = pbuf_get_fld_idx('QCWAT')
+>       tcwat_idx  = pbuf_get_fld_idx('TCWAT')
+>       lcwat_idx  = pbuf_get_fld_idx('LCWAT')
+>       cld_idx    = pbuf_get_fld_idx('CLD')
+>       concld_idx = pbuf_get_fld_idx('CONCLD')
+>       tke_idx    = pbuf_get_fld_idx('tke')
+>       kvm_idx    = pbuf_get_fld_idx('kvm')
+>       kvh_idx    = pbuf_get_fld_idx('kvh')
+>       cush_idx   = pbuf_get_fld_idx('cush')
+596,612d1022
+<   tke_idx  = pbuf_get_index('tke')
+<   kvm_idx  = pbuf_get_index('kvm')
+<   kvh_idx  = pbuf_get_index('kvh')
+<   cush_idx = pbuf_get_index('cush')
+<   
+<   pblh_idx  = pbuf_get_index('pblh')
+<   tpert_idx = pbuf_get_index('tpert')
+<   qpert_idx = pbuf_get_index('qpert',ierr)
+< 
+<   prec_dp_idx  = pbuf_get_index('PREC_DP') 
+<   snow_dp_idx  = pbuf_get_index('SNOW_DP') 
+<   prec_sh_idx  = pbuf_get_index('PREC_SH')
+<   snow_sh_idx  = pbuf_get_index('SNOW_SH')
+<   prec_sed_idx = pbuf_get_index('PREC_SED')
+<   snow_sed_idx = pbuf_get_index('SNOW_SED')
+<   prec_pcw_idx = pbuf_get_index('PREC_PCW')
+<   snow_pcw_idx = pbuf_get_index('SNOW_PCW')
+620,622c1030,1032
+<    ! Allocate memory for module variables.
+<    ! Done at the begining of a physics step at same point as the pbuf allocate for
+<    ! variables with "physpkg" scope.
+---
+> ! Allocate memory for module variables.
+> ! Done at the begining of a physics step at same point as the pbuf allocate for
+> ! variables with "physpkg" scope.
+624c1034
+<    ! Local variables
+---
+> ! Local variables
+626,630c1036
+<    integer :: i, istat
+< 
+<    allocate(dtcond(pcols,pver,begchunk:endchunk), stat=istat)
+<    if ( istat /= 0 ) call endrun (sub//': ERROR: allocate failed')
+<    dtcond = nan
+---
+>    integer :: istat
+632,638c1038,1042
+<    if (dqcond_num > 0) then
+<       allocate(dqcond(dqcond_num))
+<       do i = 1, dqcond_num
+<          allocate(dqcond(i)%cnst(pcols,pver,begchunk:endchunk), stat=istat)
+<          if ( istat /= 0 ) call endrun (sub//': ERROR: allocate failed')
+<          dqcond(i)%cnst = nan
+<       end do
+---
+>    allocate(dtcond(pcols,pver,begchunk:endchunk),        &
+>             dqcond(pcols,pver,pcnst,begchunk:endchunk), &
+>             stat=istat)
+>    if ( istat /= 0 ) then
+>       call endrun (sub//': ERROR: allocate failed')
+639a1044,1045
+>    dtcond = nan
+>    dqcond = nan
+653,656c1059
+<    integer :: i, istat
+< 
+<    deallocate(dtcond, stat=istat)
+<    if ( istat /= 0 ) call endrun (sub//': ERROR: deallocate failed')
+---
+>    integer :: istat
+658,664c1061,1063
+<    if (dqcond_num > 0) then
+<       do i = 1, dqcond_num
+<          deallocate(dqcond(i)%cnst, stat=istat)
+<          if ( istat /= 0 ) call endrun (sub//': ERROR: deallocate failed')
+<       end do
+<       deallocate(dqcond, stat=istat)
+<       if ( istat /= 0 ) call endrun (sub//': ERROR: deallocate failed')
+---
+>    deallocate(dtcond, dqcond, stat=istat)
+>    if ( istat /= 0 ) then
+>       call endrun (sub//': ERROR: deallocate failed')
+666d1064
+< 
+674c1072,1073
+<    
+---
+>    use phys_buffer,       only: pbuf_size_max, pbuf_fld, pbuf_old_tim_idx
+> 
+678,679c1077
+<    
+<    type(physics_buffer_desc), pointer :: pbuf(:)
+---
+>    type(pbuf_fld),      intent(in), dimension(pbuf_size_max) :: pbuf
+695c1093
+<    do m = 1, dqcond_num
+---
+>    do m = 1, pcnst
+698c1096
+<             dqcond(m)%cnst(i,k,lchnk) = state%q(i,k,m)
+---
+>             dqcond(i,k,m,lchnk) = state%q(i,k,m)
+704,709c1102,1103
+<    if (is_first_step()) then
+<       do m = 1, pbuf_times
+<          call pbuf_get_field(pbuf, t_ttend_idx, t_ttend, start=(/1,1,m/), kount=(/pcols,pver,1/))
+<          t_ttend(:ncol,:) = state%t(:ncol,:)
+<       end do
+<    end if
+---
+>    t_ttend => pbuf(t_ttend_idx)%fld_ptr(1,1:pcols,1:pver,lchnk,1) 
+>    t_ttend(:ncol,:pver) = state%t(:ncol,:pver)
+809,812d1202
+<     if (hist_fld_active('Z1000')) then
+<        call vertinterp(ncol, pcols, pver, state%pmid, 100000._r8, z3, p_surf)
+<        call outfld('Z1000    ', p_surf, pcols, lchnk)
+<     end if
+868,872d1257
+<     if (hist_fld_active('UQ')) then  !!+jek added for le
+<        ftem(:ncol,:) = state%u(:ncol,:)*state%q(:ncol,:,1) !!+jek added for le
+<        call outfld ('UQ      ',ftem    ,pcols   ,lchnk     )
+<     endif
+< 
+876,877d1260
+<     call outfld ('WSPDSRFMX',ftem(:,pver)   ,pcols   ,lchnk     )
+<     call outfld ('WSPDSRFAV',ftem(:,pver)   ,pcols   ,lchnk     ) 
+1007,1010d1389
+<     if (hist_fld_active('Q500')) then  !!+jek added for le
+<        call vertinterp(ncol, pcols, pver, state%pmid, 50000._r8, state%q(1,1,1), p_surf)
+<        call outfld('Q500    ', p_surf, pcols, lchnk )
+<     end if
+1016c1395
+<        call vertinterp(ncol, pcols, pver, state%pmid, 50000._r8, state%u, p_surf)
+---
+>        call vertinterp(ncol, pcols, pver, state%pmid, 50000._r8, state%u,p_surf)
+1027,1030d1405
+<     if (hist_fld_active('U010')) then
+<        call vertinterp(ncol, pcols, pver, state%pmid,  1000._r8, state%u, p_surf)
+<        call outfld('U010    ', p_surf, pcols, lchnk )
+<     end if
+1036c1411
+<        call vertinterp(ncol, pcols, pver, state%pmid, 50000._r8, state%v, p_surf)
+---
+>        call vertinterp(ncol, pcols, pver, state%pmid, 50000._r8, state%v,p_surf)
+1193,1199d1567
+<     if (hist_fld_active('T010')) then
+<        call vertinterp(ncol, pcols, pver, state%pmid, 1000._r8, state%t, p_surf)
+<        call outfld('T010           ', p_surf, pcols, lchnk )
+<     end if
+< 
+< 
+< 
+1204c1572
+<   if (chem_is('waccm_ghg') .or. chem_is('waccm_mozart') .or. chem_is('waccm_mozart_mam3')) then
+---
+>   if (chem_is('waccm_ghg') .or. chem_is('waccm_mozart')) then
+1214c1582,1583
+< subroutine diag_conv(state, ztodt, pbuf)
+---
+> subroutine diag_conv(state, ztodt,   &
+>      prec_zmc, snow_zmc, prec_cmf, snow_cmf, prec_sed, snow_sed, prec_pcw, snow_pcw)
+1228,1229d1596
+<    type(physics_buffer_desc), pointer :: pbuf(:)
+< 
+1231,1238c1598,1605
+<    real(r8), pointer :: prec_dp(:)                 ! total precipitation   from ZM convection
+<    real(r8), pointer :: snow_dp(:)                 ! snow from ZM   convection
+<    real(r8), pointer :: prec_sh(:)                 ! total precipitation   from Hack convection
+<    real(r8), pointer :: snow_sh(:)                 ! snow from   Hack   convection
+<    real(r8), pointer :: prec_sed(:)                ! total precipitation   from ZM convection
+<    real(r8), pointer :: snow_sed(:)                ! snow from ZM   convection
+<    real(r8), pointer :: prec_pcw(:)                ! total precipitation   from Hack convection
+<    real(r8), pointer :: snow_pcw(:)                ! snow from Hack   convection
+---
+>    real(r8), intent(in) :: prec_zmc(pcols)                ! total precipitation   from ZM convection
+>    real(r8), intent(in) :: snow_zmc(pcols)                ! snow from ZM   convection
+>    real(r8), intent(in) :: prec_cmf(pcols)                ! total precipitation   from Hack convection
+>    real(r8), intent(in) :: snow_cmf(pcols)                ! snow from   Hack   convection
+>    real(r8), intent(in) :: prec_sed(pcols)                ! total precipitation   from ZM convection
+>    real(r8), intent(in) :: snow_sed(pcols)                ! snow from ZM   convection
+>    real(r8), intent(in) :: prec_pcw(pcols)                ! total precipitation   from Hack convection
+>    real(r8), intent(in) :: snow_pcw(pcols)                ! snow from Hack   convection
+1243d1609
+< 
+1258,1266d1623
+<    call pbuf_get_field(pbuf, prec_dp_idx, prec_dp)
+<    call pbuf_get_field(pbuf, snow_dp_idx, snow_dp)
+<    call pbuf_get_field(pbuf, prec_sh_idx, prec_sh)
+<    call pbuf_get_field(pbuf, snow_sh_idx, snow_sh)
+<    call pbuf_get_field(pbuf, prec_sed_idx, prec_sed)
+<    call pbuf_get_field(pbuf, snow_sed_idx, snow_sed)
+<    call pbuf_get_field(pbuf, prec_pcw_idx, prec_pcw)
+<    call pbuf_get_field(pbuf, snow_pcw_idx, snow_pcw)
+< 
+1268c1625
+<    precc(:ncol) = prec_dp(:ncol)  + prec_sh(:ncol)
+---
+>    precc(:ncol) = prec_zmc(:ncol) + prec_cmf(:ncol)
+1270c1627
+<    snowc(:ncol) = snow_dp(:ncol)  + snow_sh(:ncol)
+---
+>    snowc(:ncol) = snow_zmc(:ncol) + snow_cmf(:ncol)
+1272c1629
+<    prect(:ncol) = precc(:ncol)    + precl(:ncol)
+---
+>    prect(:ncol) = precc(:ncol) + precl(:ncol)
+1276,1277d1632
+<    call outfld('PREC_PCW', prec_pcw,pcols   ,lchnk )
+<    call outfld('PREC_zmc', prec_dp ,pcols   ,lchnk )
+1290c1645
+<    ! Total convection tendencies.
+---
+> ! Total convection tendencies.
+1299c1654
+<    ! output tidal coefficients
+---
+> !  output tidal coefficients
+1306,1311c1661,1664
+<    do m = 1, dqcond_num
+<       if ( cnst_cam_outfld(m) ) then
+<          do k = 1, pver
+<             do i = 1, ncol
+<                dqcond(m)%cnst(i,k,lchnk) = (state%q(i,k,m) - dqcond(m)%cnst(i,k,lchnk))*rtdt
+<             end do
+---
+>    do m = 1, pcnst
+>       do k = 1, pver
+>          do i = 1, ncol
+>             dqcond(i,k,m,lchnk) = (state%q(i,k,m) - dqcond(i,k,m,lchnk))*rtdt
+1313,1314c1666
+<          call outfld(dcconnam(m), dqcond(m)%cnst(:,:,lchnk), pcols, lchnk)
+<       end if
+---
+>       end do
+1316a1669,1681
+>    if (diag_cnst_conv_tend == 'q_only' .or. diag_cnst_conv_tend == 'all' .or. history_budget) then
+>       if ( cnst_cam_outfld(1) ) then
+>          call outfld(dcconnam(1), dqcond(:,:,1,lchnk), pcols, lchnk)
+>       end if
+>       if (diag_cnst_conv_tend == 'all' .or. history_budget) then
+>          do m = 2, pcnst
+>             if ( cnst_cam_outfld(m) ) then
+>                call outfld(dcconnam(m), dqcond(:,:,m,lchnk), pcols, lchnk)
+>             end if
+>          end do
+>       end if
+>    end if
+> 
+1368a1734,1735
+>     call outfld('UAS',      cam_in%uas,       pcols, lchnk)
+>     call outfld('VAS',      cam_in%vas,       pcols, lchnk)
+1486c1853
+<    subroutine diag_physvar_ic (lchnk,  pbuf, cam_out, cam_in)
+---
+>    subroutine diag_physvar_ic (lchnk, pbuf, cam_out, cam_in)
+1494c1861,1862
+< 
+---
+>    use phys_buffer,       only: pbuf_size_max, pbuf_fld, pbuf_old_tim_idx 
+>    use buffer     ,       only: pblht, tpert, qpert
+1499,1500c1867
+<    type(physics_buffer_desc), pointer :: pbuf(:)
+<    
+---
+>    type(pbuf_fld), intent(in), dimension(pbuf_size_max) :: pbuf
+1508d1874
+< 
+1512d1877
+<    real(r8), pointer :: tpert(:), pblh(:), qpert(:)
+1517a1883,1886
+>       !following line added temporarily in cam3_5_45 as workaround to 
+>       !bluevista compiler problems
+>       nullify(cwat_var, conv_var_3d, conv_var_2d)
+> 
+1523,1526c1892
+<       if (qcwat_idx > 0) then
+<          call pbuf_get_field(pbuf, qcwat_idx, cwat_var, start=(/1,1,itim/), kount=(/pcols,pver,1/) )
+<          call outfld('QCWAT&IC   ',cwat_var, pcols,lchnk)
+<       end if
+---
+>       cwat_var => pbuf(qcwat_idx)%fld_ptr(1,1:pcols,1:pver,lchnk,itim)
+1528,1530c1894,1897
+<       if (tcwat_idx > 0) then
+<          call pbuf_get_field(pbuf, tcwat_idx,  cwat_var, start=(/1,1,itim/), kount=(/pcols,pver,1/) )
+<          call outfld('TCWAT&IC   ',cwat_var, pcols,lchnk)
+---
+>       !following if block added temporarily in cam3_5_45 as workaround to 
+>       !bluevista compiler problems
+>       if(.not. associated(cwat_var)) then
+>          call endrun('Could not associate to pbuf fld_ptr')
+1533,1536c1900,1903
+<       if (lcwat_idx > 0) then
+<          call pbuf_get_field(pbuf, lcwat_idx,  cwat_var, start=(/1,1,itim/), kount=(/pcols,pver,1/) )
+<          call outfld('LCWAT&IC   ',cwat_var, pcols,lchnk)
+<       end if
+---
+>       call outfld('QCWAT&IC   ',cwat_var, pcols,lchnk)
+> 
+>       cwat_var => pbuf(tcwat_idx)%fld_ptr(1,1:pcols,1:pver,lchnk,itim)
+>       call outfld('TCWAT&IC   ',cwat_var, pcols,lchnk)
+1538c1905,1908
+<       call pbuf_get_field(pbuf, cld_idx,    cwat_var, start=(/1,1,itim/), kount=(/pcols,pver,1/) )
+---
+>       cwat_var => pbuf(lcwat_idx)%fld_ptr(1,1:pcols,1:pver,lchnk,itim)
+>       call outfld('LCWAT&IC   ',cwat_var, pcols,lchnk)
+> 
+>       cwat_var => pbuf(cld_idx)%fld_ptr(1,1:pcols,1:pver,lchnk,itim)
+1541c1911
+<       call pbuf_get_field(pbuf, concld_idx, cwat_var, start=(/1,1,itim/), kount=(/pcols,pver,1/) )
+---
+>       cwat_var => pbuf(concld_idx)%fld_ptr(1,1:pcols,1:pver,lchnk,itim)
+1544c1914
+<       call pbuf_get_field(pbuf, tke_idx, conv_var_3d)
+---
+>       conv_var_3d => pbuf(tke_idx)%fld_ptr(1,1:pcols,1:pverp,lchnk,itim)
+1547c1917
+<       call pbuf_get_field(pbuf, kvm_idx,  conv_var_3d)
+---
+>       conv_var_3d => pbuf(kvm_idx)%fld_ptr(1,1:pcols,1:pverp,lchnk,itim)
+1550c1920
+<       call pbuf_get_field(pbuf, kvh_idx,  conv_var_3d)
+---
+>       conv_var_3d => pbuf(kvh_idx)%fld_ptr(1,1:pcols,1:pverp,lchnk,itim)
+1552,1559d1921
+<  
+<       call pbuf_get_field(pbuf, cush_idx, conv_var_2d ,(/1,itim/),  (/pcols,1/))
+<       call outfld('CUSH&IC   ',conv_var_2d, pcols,lchnk)
+< 
+<       if (qpert_idx > 0) then 
+<          call pbuf_get_field(pbuf, qpert_idx, qpert)
+<          call outfld('QPERT&IC   ', qpert, pcols, lchnk)
+<       end if
+1561,1562c1923,1924
+<       call pbuf_get_field(pbuf, pblh_idx,  pblh)
+<       call outfld('PBLH&IC    ', pblh,  pcols, lchnk)
+---
+>       conv_var_2d => pbuf(cush_idx)%fld_ptr(1,1:pcols,1,lchnk,itim)
+>       call outfld('CUSH&IC   ',conv_var_2d, pcols,lchnk)
+1564,1565c1926,1928
+<       call pbuf_get_field(pbuf, tpert_idx, tpert)
+<       call outfld('TPERT&IC   ', tpert, pcols, lchnk)
+---
+>       call outfld('PBLH&IC    ', pblht(1,  lchnk), pcols, lchnk)
+>       call outfld('TPERT&IC   ', tpert(1,  lchnk), pcols, lchnk)
+>       call outfld('QPERT&IC   ', qpert(1,1,lchnk), pcols, lchnk)
+1576,1584c1939,1947
+< subroutine diag_phys_tend_writeout(state, pbuf,  tend, ztodt, tmp_q, tmp_cldliq, tmp_cldice, &
+<                                    tmp_t, qini, cldliqini, cldiceini)
+< 
+<    !---------------------------------------------------------------
+<    !
+<    ! Purpose:  Dump physics tendencies for moisture and temperature
+<    !
+<    !---------------------------------------------------------------
+< 
+---
+>    subroutine diag_phys_tend_writeout (state, pbuf, tend, ztodt, tmp_q, tmp_cldliq, tmp_cldice, &
+>                                        tmp_t, qini, cldliqini, cldiceini)
+> !
+> !---------------------------------------------------------------
+> !
+> ! Purpose:  Dump physics tendencies for moisture and temperature
+> !
+> !---------------------------------------------------------------
+> !
+1587,1588c1950
+<    
+<    ! Arguments
+---
+>    use phys_buffer,     only: pbuf_fld,pbuf_size_max,pbuf_get_fld_idx
+1589a1952,1954
+> !
+> ! Arguments
+> !
+1591,1592c1956
+<    
+<    type(physics_buffer_desc), pointer :: pbuf(:)
+---
+>    type(pbuf_fld),      intent(in), dimension(pbuf_size_max) :: pbuf
+1603,1604c1967,1969
+<    !---------------------------Local workspace-----------------------------
+< 
+---
+> !
+> !---------------------------Local workspace-----------------------------
+> !
+1615,1617c1980
+<    integer  :: itim
+< 
+<    !-----------------------------------------------------------------------
+---
+>    integer  :: ifld
+1618a1982,1984
+> !
+> !-----------------------------------------------------------------------
+> !
+1624,1626c1990,1992
+< 
+<    ! Dump out post-physics state (FV only)
+< 
+---
+> !
+> ! Dump out post-physics state (FV only)
+> !
+1638,1640c2004,2006
+< 
+<    ! T-tendency due to FV Energy fixer (remove from total physics tendency diagnostic)
+< 
+---
+> !
+> ! T-tendency due to FV Energy fixer (remove from total physics tendency diagnostic)
+> !
+1649,1651c2015,2017
+< 
+<    ! Total physics tendency for Temperature
+< 
+---
+> !
+> ! Total physics tendency for Temperature
+> !
+1653,1655c2019,2021
+< 
+<    ! Tendency for dry mass adjustment of q (valid for FV only)
+< 
+---
+> !
+> ! Tendency for dry mass adjustment of q (valid for FV only)
+> !
+1664,1666c2030,2032
+< 
+<    ! Total physics tendency for moisture and other tracers
+< 
+---
+> !
+> ! Total physics tendency for moisture and other tracers
+> !
+1680,1681c2046,2048
+<    ! Total (physics+dynamics, everything!) tendency for Temperature
+< 
+---
+> !
+> ! Total (physics+dynamics, everything!) tendency for Temperature
+> !
+1683,1684c2050,2051
+<    itim = pbuf_old_tim_idx()
+<    call pbuf_get_field(pbuf, t_ttend_idx, t_ttend, start=(/1,1,itim/), kount=(/pcols,pver,1/))
+---
+>    ifld = pbuf_get_fld_idx('T_TTEND')
+>    t_ttend  => pbuf(ifld)%fld_ptr(1,1:pcols,1:pver,lchnk, 1)
+1687,1688c2054,2055
+<    ftem3(:ncol,:) = (state%t(:ncol,:) - t_ttend(:ncol,:))/ztodt
+<    call outfld('TTEND_TOT', ftem3, pcols, lchnk)
+---
+>    ftem3(:ncol,:pver) = (t_ttend(:ncol,:pver) - state%t(:ncol,:pver))/ztodt
+>    call outfld('TTEND_TOT',ftem3, pcols, lchnk )
+1691c2058
+<    t_ttend(:ncol,:) = state%t(:ncol,:)
+---
+>    t_ttend(:ncol,:pver) = state%t(:ncol,:pver)
+1693c2060
+< end subroutine diag_phys_tend_writeout
+---
+>    end subroutine diag_phys_tend_writeout
+diff -r ./cd_core.F90 ../../SourceMods_NorESM1_org/src.cam/cd_core.F90
+424c424
+< #ifndef WACCM_MOZART
+---
+> #ifndef WACCM_PHYS
+431c431
+< #ifndef WACCM_MOZART
+---
+> #ifndef WACCM_PHYS
+diff -r ./check_energy.F90 ../../SourceMods_NorESM1_org/src.cam/check_energy.F90
+26c26
+<   
+---
+>   use phys_buffer,     only: pbuf_size_max, pbuf_fld, pbuf_old_tim_idx, pbuf_times, pbuf_get_fld_idx
+119,120c119
+<     
+<     use physics_buffer, only : pbuf_add_field, dtype_r8, pbuf_times
+---
+>     use phys_buffer,  only: pbuf_times, pbuf_add
+125,127c124,125
+< 
+<     call pbuf_add_field('TEOUT', 'global',dtype_r8 , (/pcols,pbuf_times/),     teout_idx)
+<     call pbuf_add_field('DTCORE','global',dtype_r8,  (/pcols,pver,pbuf_times/),dtcore_idx )
+---
+>     call pbuf_add('TEOUT',  'global', 1, 1,    pbuf_times, teout_idx)
+>     call pbuf_add('DTCORE', 'global', 1, pver, pbuf_times, dtcore_idx )
+180c178
+<     use physics_buffer, only : physics_buffer_desc, pbuf_set_field, pbuf_times
+---
+> 
+189c187,188
+<     type(physics_buffer_desc), pointer      :: pbuf(:)
+---
+>     type(pbuf_fld),        intent(inout)    :: pbuf(pbuf_size_max)
+> 
+252c251,255
+<        call pbuf_set_field(pbuf, teout_idx, state%te_ini)
+---
+>        if(associated(pbuf(teout_idx)%fld_ptr)) 	then	
+>           do itim = 1, pbuf_times	
+>              pbuf(teout_idx)%fld_ptr(1,:ncol,1,lchnk,itim) = state%te_ini(:ncol)
+>           end do
+>        end if
+408c411
+<   subroutine check_energy_gmean(state, pbuf2d, dtime, nstep)
+---
+>   subroutine check_energy_gmean(state, pbuf, dtime, nstep)
+410,411d412
+<     use physics_buffer, only : physics_buffer_desc, pbuf_get_field, pbuf_get_chunk, pbuf_old_tim_idx
+<     
+418c419
+<     type(physics_buffer_desc),    pointer    :: pbuf2d(:,:)
+---
+>     type(pbuf_fld),      intent(inout), dimension(pbuf_size_max)     :: pbuf
+431d431
+<     real(r8), pointer :: teout(:)
+444,446c444
+<        call pbuf_get_field(pbuf_get_chunk(pbuf2d,lchnk),teout_idx, teout)
+< 
+<        te(:ncol,lchnk,2) = teout(1:ncol)
+---
+>        te(:ncol,lchnk,2) = pbuf(teout_idx)%fld_ptr(1,:ncol,1,lchnk,itim)
+diff -r ./dyn_comp.F90 ../../SourceMods_NorESM1_org/src.cam/dyn_comp.F90
+854c854
+<    use metdata,     only: get_met_fields, advance_met, get_us_vs, met_fix_mass, met_rlx, zeta_rlx
+---
+>    use metdata,     only: get_met_fields, advance_met, get_us_vs, fix_mass, met_rlx, zeta_rlx
+1342,1346c1342,1346
+<       dp0(:,:,:) = 0._r8
+<       mfx(:,:,:) = 0._r8
+<       mfy(:,:,:) = 0._r8
+<       cx(:,:,:) = 0._r8
+<       cy(:,:,:) = 0._r8
+---
+>       dp0(:,:,:) = 0.d0
+>       mfx(:,:,:) = 0.d0
+>       mfy(:,:,:) = 0.d0
+>       cx(:,:,:) = 0.d0
+>       cy(:,:,:) = 0.d0
+1877c1877
+<            if (met_fix_mass) then
+---
+>            if (fix_mass) then
+2172c2172
+<            if (met_fix_mass) then
+---
+>            if (fix_mass) then
+diff -r ./metdata.F90 ../../SourceMods_NorESM1_org/src.cam/metdata.F90
+12,13d11
+< ! 
+< ! 05.10.20 Add a namelist parameter for Boundary layer and pause/resume control. by Mao-Lin Shen
+14a13
+> ! 14.11.19 Add a namelist parameter for Boundary layer control. by Mao-Lin Shen 
+43,58c42,54
+<   public :: metdata_dyn_init  ! subroutine to open files, allocate blocked arrays, etc
+<   public :: metdata_phys_init ! subroutine to allocate chunked arrays
+<   public :: advance_met       ! subroutine to read more data and interpolate
+<   public :: get_met_fields    ! interface to set meteorology fields
+<   public :: get_met_srf1
+<   public :: get_met_srf2
+<   public :: get_us_vs       
+<   public :: metdata_readnl
+<   public :: met_winds_on_walls
+<   public :: write_met_restart
+<   public :: read_met_restart
+<   public :: met_rlx
+<   public :: met_fix_mass
+<   public :: met_srf_feedback
+<   public :: zeta_rlx ! mscheck: for snapshot nudging control
+< 
+---
+>   public metdata_dyn_init  ! subroutine to open files, allocate blocked arrays, etc
+>   public metdata_phys_init ! subroutine to allocate chunked arrays
+>   public advance_met       ! subroutine to read more data and interpolate
+>   public get_met_fields    ! interface to set meteorology fields
+>   public get_us_vs       
+>   public offline_met_defaultopts
+>   public offline_met_setopts
+>   public met_winds_on_walls
+>   public write_met_restart
+>   public read_met_restart
+>   public met_rlx
+>   public fix_mass
+>   public zeta_rlx ! mscheck: for snapshot nudging control
+80a77
+>      Module Procedure get_srf_flds
+88,89c85,86
+<   logical :: met_cell_wall_winds = .false.  ! true => met data winds are cell centered
+<   logical :: met_remove_file = .false.  ! delete metdata file when finished with it
+---
+>   logical :: cell_wall_winds = .false.  ! true => met data winds are cell centered
+>   logical :: remove_met_file = .false.  ! delete metdata file when finished with it
+91,99c88,91
+<   character(len=16) :: met_shflx_name = 'SHFLX'
+<   character(len=16) :: met_qflx_name = 'QFLX'
+<   real(r8) :: met_snowh_factor = 1._r8
+<   real(r8) :: met_shflx_factor = 1._r8
+<   real(r8) :: met_qflx_factor  = 1._r8
+<   logical  :: met_srf_feedback = .true.
+<   logical  :: met_srf_nudge_flux = .true. ! wsx, wsy, shf, and cflx nudged rather than forced.
+<                                           ! This is done primarily to prevent unrealistic
+<                                           ! surface temperatures.
+---
+>   character(len=16) :: shflx_name = 'SHFLX'
+>   character(len=16) :: qflx_name = 'QFLX'
+>   real(r8) :: shflx_factor = 1._r8
+>   real(r8) :: qflx_factor  = 1._r8
+136d127
+<   real(r8), allocatable :: met_snowh(:,:) ! interpolated snow height
+154d144
+<   type(input2d) :: met_snowhi(2)
+156c146
+<   integer :: nudging_ss_counter = 100 !ms! for snapshot nudging
+---
+>   integer :: nudging_ss_counter = 100 !ms! for snapshot nudging 
+170,172c160,162
+<   character(len=256) :: curr_filename, next_filename, met_data_file
+<   character(len=256) :: met_filenames_list = ''
+<   character(len=256) :: met_data_path = ''
+---
+>   character(len=256) :: curr_filename, next_filename, metdata_file
+>   character(len=256) :: filenames_list = ''
+>   character(len=256) :: met_datapath = ''
+179a170
+> 
+192a184
+> 
+196,199c188,191
+<   real(r8) :: met_rlx_top = 60._r8
+<   real(r8) :: met_rlx_bot = 50._r8
+<   real(r8) :: met_max_rlx = 1._r8
+<   real(r8) :: met_BLC_factor(1:20) = -1._r8
+---
+>   real(r8) :: rlx_top_km = 60._r8
+>   real(r8) :: rlx_bot_km = 50._r8
+>   real(r8) :: max_rlx = 1._r8
+>   real(r8) :: BLC_factor(1:20) = -1._r8
+201c193
+<   logical  :: met_fix_mass = .true.
+---
+>   logical  :: fix_mass = .true.
+206,209c198,214
+< !-------------------------------------------------------------------------
+< ! meteorology data options
+< !-------------------------------------------------------------------------
+<   subroutine metdata_readnl(nlfile)
+---
+> !--------------------------------------------------------------------------
+> ! Get the default runtime options
+> !--------------------------------------------------------------------------
+>   subroutine offline_met_defaultopts( met_data_file_out, &
+>                                       met_data_path_out, & 
+>                                       met_remove_file_out, & 
+>                                       met_cell_wall_winds_out, &
+>                                       met_filenames_list_out, &
+>                                       met_rlx_top_km_out, &
+>                                       met_rlx_bot_km_out, &
+>                                       met_max_rlx_out, &
+>                                       met_BLC_factor_out, &
+>                                       met_fix_mass_out, &
+>                                       met_shflx_name_out, &
+>                                       met_shflx_factor_out, &
+>                                       met_qflx_name_out, &
+>                                       met_qflx_factor_out  )
+211,253c216
+<    use namelist_utils,  only: find_group_name
+<    use units,           only: getunit, freeunit
+<    use mpishorthand
+< 
+<    character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
+< 
+<    ! Local variables
+<    integer :: unitn, ierr
+<    character(len=*), parameter :: subname = 'metdata_readnl'
+< 
+<    namelist /metdata_nl/ &
+<         met_data_file, &
+<         met_data_path, & 
+<         met_remove_file, & 
+<         met_cell_wall_winds, &
+<         met_filenames_list, &
+<         met_rlx_top, &
+<         met_rlx_bot, &
+<         met_max_rlx, &
+<         met_fix_mass, &
+<         met_shflx_name, &
+<         met_shflx_factor, &
+<         met_snowh_factor, &
+<         met_qflx_name, &
+<         met_qflx_factor, &
+<         met_BLC_factor, &
+<         met_srf_feedback, &
+<         met_srf_nudge_flux
+< 
+<    ! Read namelist
+<    if (masterproc) then
+<       unitn = getunit()
+<       open( unitn, file=trim(nlfile), status='old' )
+<       call find_group_name(unitn, 'metdata_nl', status=ierr)
+<       if (ierr == 0) then
+<          read(unitn, metdata_nl, iostat=ierr)
+<          if (ierr /= 0) then
+<             call endrun(subname // ':: ERROR reading namelist')
+<          end if
+<       end if
+<       close(unitn)
+<       call freeunit(unitn)
+<    end if
+---
+>     implicit none
+255c218,231
+< #if ( defined SPMD )
+---
+>     character(len=256), intent(out), optional :: met_data_file_out
+>     character(len=256), intent(out), optional :: met_data_path_out
+>     logical,            intent(out), optional :: met_remove_file_out
+>     logical,            intent(out), optional :: met_cell_wall_winds_out
+>     character(len=256), intent(out), optional :: met_filenames_list_out
+>     real(r8),           intent(out), optional :: met_rlx_top_km_out
+>     real(r8),           intent(out), optional :: met_rlx_bot_km_out
+>     real(r8),           intent(out), optional :: met_max_rlx_out
+>     real(r8),           intent(out), optional :: met_BLC_factor_out(20)
+>     logical ,           intent(out), optional :: met_fix_mass_out
+>     character(len=16),  intent(out), optional :: met_shflx_name_out
+>     real(r8),           intent(out), optional :: met_shflx_factor_out
+>     character(len=16),  intent(out), optional :: met_qflx_name_out
+>     real(r8),           intent(out), optional :: met_qflx_factor_out
+257c233,235
+<    ! Broadcast namelist variables
+---
+>     if ( present( met_data_file_out ) ) then
+>        met_data_file_out = metdata_file
+>     endif
+259,275c237,267
+<    call mpibcast (met_data_file  ,len(met_data_file) ,mpichar,0,mpicom)
+<    call mpibcast (met_data_path  ,len(met_data_path) ,mpichar,0,mpicom)
+<    call mpibcast (met_remove_file    ,1 ,mpilog, 0, mpicom )
+<    call mpibcast (met_cell_wall_winds,1 ,mpilog, 0, mpicom )
+<    call mpibcast (met_filenames_list ,len(met_filenames_list),mpichar,0,mpicom)
+<    call mpibcast (met_rlx_top,        1 ,mpir8,  0, mpicom )
+<    call mpibcast (met_rlx_bot,        1 ,mpir8,  0, mpicom )
+<    call mpibcast (met_max_rlx,        1 ,mpir8,  0, mpicom )
+<    call mpibcast (met_fix_mass,       1 ,mpilog, 0, mpicom )
+<    call mpibcast (met_BLC_factor     ,20 ,mpilog,0,mpicom )
+<    call mpibcast (met_qflx_name      ,len(met_qflx_name),     mpichar,0,mpicom)
+<    call mpibcast (met_shflx_name     ,len(met_shflx_name),    mpichar,0,mpicom)
+<    call mpibcast (met_qflx_factor    ,1, mpir8,  0, mpicom )
+<    call mpibcast (met_shflx_factor   ,1, mpir8,  0, mpicom )
+<    call mpibcast (met_snowh_factor   ,1, mpir8,  0, mpicom )
+<    call mpibcast (met_srf_feedback   ,1 ,mpilog, 0, mpicom )
+< #endif
+---
+>     if ( present( met_data_path_out ) ) then
+>        met_data_path_out = met_datapath
+>     endif
+> 
+>     if ( present( met_remove_file_out ) ) then
+>        met_remove_file_out = remove_met_file
+>     endif
+> 
+>     if ( present( met_cell_wall_winds_out ) ) then
+>        met_cell_wall_winds_out =  cell_wall_winds
+>     endif
+> 
+>     if ( present( met_filenames_list_out ) ) then
+>        met_filenames_list_out =  filenames_list
+>     endif
+> 
+>     if ( present( met_rlx_top_km_out ) ) then
+>        met_rlx_top_km_out = rlx_top_km
+>     endif
+> 
+>     if ( present( met_rlx_bot_km_out ) ) then
+>        met_rlx_bot_km_out = rlx_bot_km
+>     endif
+> 
+>     if ( present( met_max_rlx_out ) ) then
+>        met_max_rlx_out = max_rlx
+>     endif
+> 
+>     if ( present( met_BLC_factor_out ) ) then
+>        met_BLC_factor_out = BLC_factor
+>     endif
+277,292c269,270
+<    if (masterproc) then
+<        write(iulog,*)'Time-variant meteorological dataset (met_data_file) is: ', trim(met_data_file)
+<        write(iulog,*)'Meteorological data file will be removed (met_remove_file): ', met_remove_file
+<        write(iulog,*)'Meteorological winds are on cell walls (met_cell_wall_winds): ', met_cell_wall_winds
+<        write(iulog,*)'Meteorological file names list file: ', trim(met_filenames_list) 
+<        write(iulog,*)'Meteorological relaxation PBL control sets to be: ', met_BLC_factor
+<        write(iulog,*)'Meteorological relaxation top is (km): ', met_rlx_top
+<        write(iulog,*)'Meteorological relaxation bottom is (km): ', met_rlx_bot
+<        write(iulog,*)'Meteorological maximum relaxation is : ',met_max_rlx
+<        write(iulog,*)'Offline driver mass fixer is trurned on (met_fix_mass): ',met_fix_mass
+<        write(iulog,*)'Meteorological shflx field name : ', trim(met_shflx_name) 
+<        write(iulog,*)'Meteorological shflx multiplication factor : ', met_shflx_factor
+<        write(iulog,*)'Meteorological qflx field name : ', trim(met_qflx_name) 
+<        write(iulog,*)'Meteorological qflx multiplication factor : ', met_qflx_factor 
+<        write(iulog,*)'Meteorological snowh multiplication factor : ', met_snowh_factor
+<        write(iulog,*)'Meteorological allow srf models feedbacks : ', met_srf_feedback
+---
+>     if ( present( met_fix_mass_out ) ) then
+>        met_fix_mass_out = fix_mass
+295c273,394
+<  end subroutine metdata_readnl
+---
+>     if ( present( met_shflx_name_out ) ) then
+>        met_shflx_name_out = shflx_name
+>     endif
+>     if ( present( met_shflx_factor_out ) ) then
+>        met_shflx_factor_out = shflx_factor
+>     endif
+>     if ( present( met_qflx_name_out ) ) then
+>        met_qflx_name_out = qflx_name
+>     endif
+>     if ( present( met_qflx_factor_out ) ) then
+>        met_qflx_factor_out = qflx_factor
+>     endif
+> 
+>   end subroutine offline_met_defaultopts
+> 
+> !--------------------------------------------------------------------------
+> ! Set runtime options
+> !--------------------------------------------------------------------------
+>   subroutine offline_met_setopts( met_data_file_in, &
+>                                   met_data_path_in, &
+>                                   met_remove_file_in, &
+>                                   met_cell_wall_winds_in, &
+>                                   met_filenames_list_in, &
+>                                   met_rlx_top_km_in, &
+>                                   met_rlx_bot_km_in, &
+>                                   met_max_rlx_in, &
+> !!!#if ( defined _OFFLINE_DYN_BLC )
+>                                   met_BLC_factor_in, &
+> !!!#endif /* _OFFLINE_DYN_BLC */
+>                                   met_fix_mass_in, &
+>                                   met_shflx_name_in, &
+>                                   met_shflx_factor_in, &
+>                                   met_qflx_name_in, &
+>                                   met_qflx_factor_in  )
+> 
+>     implicit none
+> 
+>     character(len=256), intent(in), optional :: met_data_file_in
+>     character(len=256), intent(in), optional :: met_data_path_in
+>     logical,            intent(in), optional :: met_remove_file_in
+>     logical,            intent(in), optional :: met_cell_wall_winds_in
+>     character(len=256), intent(in), optional :: met_filenames_list_in
+>     real(r8),           intent(in), optional :: met_rlx_top_km_in
+>     real(r8),           intent(in), optional :: met_rlx_bot_km_in
+>     real(r8),           intent(in), optional :: met_max_rlx_in
+>     real(r8),           intent(in), optional :: met_BLC_factor_in(20)
+>     logical ,           intent(in), optional :: met_fix_mass_in
+>     character(len=16),  intent(in), optional :: met_shflx_name_in
+>     real(r8),           intent(in), optional :: met_shflx_factor_in
+>     character(len=16),  intent(in), optional :: met_qflx_name_in
+>     real(r8),           intent(in), optional :: met_qflx_factor_in
+> 
+>     if ( present( met_data_file_in ) ) then
+>        metdata_file = met_data_file_in 
+>     endif
+> 
+>     if ( present( met_data_path_in ) ) then
+>        met_datapath = met_data_path_in
+>     endif
+> 
+>     if ( present( met_remove_file_in ) ) then
+>        remove_met_file = met_remove_file_in
+>     endif
+> 
+>     if ( present( met_cell_wall_winds_in ) ) then
+>        cell_wall_winds = met_cell_wall_winds_in  
+>     endif
+> 
+>     if ( present( met_filenames_list_in ) ) then
+>        filenames_list = met_filenames_list_in 
+>     endif
+> 
+>     if ( present( met_rlx_top_km_in ) ) then
+>        rlx_top_km = met_rlx_top_km_in
+>     endif
+> 
+>     if ( present( met_rlx_bot_km_in ) ) then
+>        rlx_bot_km = met_rlx_bot_km_in
+>     endif
+> 
+>     if ( present( met_max_rlx_in ) ) then
+>        max_rlx = met_max_rlx_in
+>     endif
+> 
+>     if ( present( met_BLC_factor_in ) ) then
+>        BLC_factor = met_BLC_factor_in
+>     endif
+> 
+>     if ( present( met_fix_mass_in ) ) then
+>        fix_mass = met_fix_mass_in
+>     endif
+> 
+>     if ( present( met_shflx_name_in ) ) then
+>        shflx_name = met_shflx_name_in
+>     endif
+>     if ( present( met_shflx_factor_in ) ) then
+>        shflx_factor = met_shflx_factor_in
+>     endif
+>     if ( present( met_qflx_name_in ) ) then
+>        qflx_name = met_qflx_name_in
+>     endif
+>     if ( present( met_qflx_factor_in ) ) then
+>        qflx_factor = met_qflx_factor_in
+>     endif
+> 
+>     if (masterproc) then
+>        write(iulog,*)'Time-variant meteorological dataset (metdata_file) is: ', trim(metdata_file)
+>        write(iulog,*)'Meteorological data file will be removed (remove_met_file): ', remove_met_file
+>        write(iulog,*)'Meteorological winds are on cell walls (cell_wall_winds): ', cell_wall_winds
+>        write(iulog,*)'Meteorological file names list file: ', trim(filenames_list) 
+>        write(iulog,*)'Meteorological relaxation top is (km): ', rlx_top_km
+>        write(iulog,*)'Meteorological relaxation bottom is (km): ', rlx_bot_km
+>        write(iulog,*)'Meteorological maximum relaxation is : ',max_rlx
+>        write(iulog,*)'Meteorological relaxation over Boundary layer is : ', BLC_factor
+>        write(iulog,*)'Offline driver mass fixer is trurned on (fix_mass): ',fix_mass
+>        write(iulog,*)'Meteorological shflx field name : ', trim(shflx_name) 
+>        write(iulog,*)'Meteorological shflx multiplication factor : ', shflx_factor
+>        write(iulog,*)'Meteorological qflx field name : ', trim(qflx_name) 
+>        write(iulog,*)'Meteorological qflx multiplication factor : ', qflx_factor 
+>     endif
+> 
+>   end subroutine offline_met_setopts
+325c424
+<        curr_filename = met_data_file
+---
+>        curr_filename = metdata_file
+332c431
+<     call open_met_datafile( curr_filename, curr_fileid, curr_data_times, met_data_path, check_dims=.true., grid=grid)
+---
+>     call open_met_datafile( grid, curr_filename, curr_fileid, curr_data_times, met_datapath, check_dims=.true.)
+335c434
+<          call open_met_datafile( next_filename, next_fileid, next_data_times, met_data_path )
+---
+>          call open_met_datafile( grid, next_filename, next_fileid, next_data_times, met_datapath )
+355c454
+<     if (met_cell_wall_winds) then
+---
+>     if (cell_wall_winds) then
+362c461
+<     if (.not. met_cell_wall_winds) then
+---
+>     if (.not. cell_wall_winds) then
+379d477
+<    use infnan,      only : nan
+391d488
+<    call addfld ('MET_SNOWH','    ',1,    'A','Meteorology snow height',phys_decomp)
+426,433d522
+<    met_ts(:,:) = nan
+<    
+<    if(.not.met_srf_feedback) then
+<       allocate( met_snowhi(nm)%data(pcols,begchunk:endchunk) )
+<       allocate( met_snowhi(np)%data(pcols,begchunk:endchunk) )
+<       allocate( met_snowh(pcols,begchunk:endchunk) )
+<       met_snowh(:,:) = nan
+<    endif
+437,443d525
+<    ! initialize phys surface fields...
+<    call get_model_time()
+<    call check_files()
+<    call read_phys_srf_flds()
+<    call interp_phys_srf_flds()
+<    datatimem = -1.e36_r8
+<    datatimep = -1.e36_r8
+460d541
+<    
+467,468c548,549
+<     nudging_ss_counter = nudging_ss_counter + 1 !ms! for snapshot nudging
+<     if ( nudging_ss_counter == 1 ) then
+---
+>     nudging_ss_counter = nudging_ss_counter + 1 !ms! for snapshot nudging 
+>     if ( nudging_ss_counter == 1 ) then 
+472c553
+<     end if
+---
+>     end if 
+477,478c558,559
+<         write(iulog,*) 'mscheck: metdata_in: -----------------------------'
+<       end if
+---
+>         write(iulog,*) 'mscheck: metdata_in: -----------------------------' 
+>       end if 
+483c564
+<        call check_files()
+---
+>        call check_files(grid)
+494a576
+> 
+513,516c595,597
+<       call pio_closefile( curr_fileid )
+<       deallocate( curr_data_times )
+<       allocate( curr_data_times( size( next_data_times ) ) )
+<       call open_met_datafile( curr_filename, curr_fileid, curr_data_times, met_data_path)
+---
+> !! MS: should (?) force re-read ps
+> !      call pio_closefile( curr_fileid )
+> !      call open_met_datafile( grid, curr_filename, curr_fileid, curr_data_times, met_datapath, check_dims=.true.)
+518d598
+<       call read_next_metdata(grid)
+519a600,615
+> ! MS: probably not really useful------TBD
+> !      if ( associated(next_data_times) ) then
+> !        if (curr_mod_time >= next_data_times(1)) then
+> 
+>           call pio_closefile( curr_fileid )
+>           deallocate( curr_data_times )
+>           allocate( curr_data_times( size( next_data_times ) ) )
+> 
+>           call open_met_datafile( grid, curr_filename, curr_fileid,curr_data_times, met_datapath )
+> 
+> 
+> !        end if
+> !      end if
+> !! ------------------------------------tbd
+> 
+>       call read_next_metdata(grid)
+523,524c619
+<       end if
+< 
+---
+>       end if 
+526a622
+> 
+528c624
+<        call read_next_ps(grid)
+---
+>       call read_next_ps(grid)
+532a629
+>     !if ( zeta_rlx > 0.0_r8 ) then !MS! do only when zeta_rlx = 1.0_r8
+533a631
+>     !end if !ms! 
+536a635
+> 
+556d654
+< !   snowh
+558,559c656,657
+<   subroutine get_met_srf2( cam_in )
+<     use camsrfexch,          only: cam_in_t    
+---
+>   subroutine get_srf_flds( cam_in )
+>     use camsrfexch_types,    only: cam_in_t    
+562d659
+<     use shr_const_mod,       only: shr_const_stebol
+568c665
+<     integer :: c,ncol,i
+---
+>     integer :: c,ncol
+570,586c667,675
+<     if (met_srf_nudge_flux) then
+<        do c=begchunk,endchunk
+<           ncol = get_ncols_p(c)
+<           cam_in(c)%wsx(:ncol)     = (1._r8-met_rlx(pver)*zeta_rlx) * cam_in(c)%wsx(:ncol)    + met_rlx(pver)*zeta_rlx * met_taux(:ncol,c)
+<           cam_in(c)%wsy(:ncol)     = (1._r8-met_rlx(pver)*zeta_rlx) * cam_in(c)%wsy(:ncol)    + met_rlx(pver)*zeta_rlx * met_tauy(:ncol,c)
+<           cam_in(c)%shf(:ncol)     = (1._r8-met_rlx(pver)*zeta_rlx) * cam_in(c)%shf(:ncol)    + met_rlx(pver)*zeta_rlx * (met_shflx(:ncol,c) * met_shflx_factor)
+<           cam_in(c)%cflx(:ncol,1)  = (1._r8-met_rlx(pver)*zeta_rlx) * cam_in(c)%cflx(:ncol,1) + met_rlx(pver)*zeta_rlx * (met_qflx(:ncol,c)  * met_qflx_factor)
+<        end do                    ! Chunk loop
+<     else
+<        do c=begchunk,endchunk
+<           ncol = get_ncols_p(c)
+<           cam_in(c)%wsx(:ncol)     = met_taux(:ncol,c)
+<           cam_in(c)%wsy(:ncol)     = met_tauy(:ncol,c)
+<           cam_in(c)%shf(:ncol)     = met_shflx(:ncol,c) * met_shflx_factor
+<           cam_in(c)%cflx(:ncol,1)  = met_qflx(:ncol,c)  * met_qflx_factor
+<        end do                    ! Chunk loop
+<     end if
+---
+>     call t_startf('MET__GET_SRF_FLDS')
+> 
+>     do c=begchunk,endchunk
+>        ncol = get_ncols_p(c)
+>        cam_in(c)%wsx(:ncol)    = met_taux(:ncol,c)
+>        cam_in(c)%wsy(:ncol)    = met_tauy(:ncol,c)
+>        cam_in(c)%shf(:ncol)    = met_shflx(:ncol,c)* shflx_factor
+>        cam_in(c)%cflx(:ncol,1) = met_qflx(:ncol,c) * qflx_factor
+>     end do                    ! Chunk loop
+589,594c678,681
+<        if (masterproc) then
+<           write(iulog,*)'METDATA   maxval(met_taux),minval(met_taux): ',maxval(met_taux),minval(met_taux)
+<           write(iulog,*)'METDATA   maxval(met_tauy),minval(met_tauy): ',maxval(met_tauy),minval(met_tauy)
+<           write(iulog,*)'METDATA maxval(met_shflx),minval(met_shflx): ',maxval(met_shflx),minval(met_shflx)
+<           write(iulog,*)'METDATA   maxval(met_qflx),minval(met_qflx): ',maxval(met_qflx),minval(met_qflx)
+<        endif
+---
+>       write(iulog,*)'METDATA maxval(met_taux),minval(met_taux): ',maxval(met_taux),minval(met_taux)
+>       write(iulog,*)'METDATA maxval(met_tauy),minval(met_tauy): ',maxval(met_tauy),minval(met_tauy)
+>       write(iulog,*)'METDATA maxval(met_shflx),minval(met_shflx): ',maxval(met_shflx),minval(met_shflx)
+>       write(iulog,*)'METDATA maxval(met_qflx),minval(met_qflx): ',maxval(met_qflx),minval(met_qflx)
+604,614c691
+<   end subroutine get_met_srf2
+< 
+< !-------------------------------------------------------------------
+< !-------------------------------------------------------------------
+<   subroutine get_met_srf1( cam_in )
+<     use camsrfexch,          only: cam_in_t    
+<     use phys_grid,           only: get_ncols_p
+<     use cam_history,         only: outfld
+<     use shr_const_mod,       only: shr_const_stebol
+< 
+<     implicit none
+---
+>     call t_stopf('MET__GET_SRF_FLDS')
+616,644c693
+<     type(cam_in_t), intent(inout), dimension(begchunk:endchunk) :: cam_in
+< 
+<     integer :: c,ncol,i
+<     
+<     if (met_srf_feedback) return
+<     if (.not.has_ts) then
+<        call endrun('The meteorolgy input must have TS to run with met_srf_feedback set to FALSE')
+<     endif
+< 
+<     do c=begchunk,endchunk
+<        ncol = get_ncols_p(c)
+<        cam_in(c)%ts(:ncol)     = met_ts(:ncol,c)
+<        do i = 1,ncol
+<           cam_in(c)%snowhland(i) = met_snowh(i,c)*cam_in(c)%landfrac(i) * met_snowh_factor
+<        enddo
+<     end do ! Chunk loop
+< 
+<     if (debug) then
+<        if (masterproc) then
+<           write(iulog,*)'METDATA       maxval(met_ts),minval(met_ts): ',maxval(met_ts),minval(met_ts)
+<           write(iulog,*)'METDATA maxval(met_snowh),minval(met_snowh): ',maxval(met_snowh),minval(met_snowh)
+<        endif
+<     endif
+< 
+<     do c = begchunk, endchunk
+<        call outfld('MET_SNOWH',cam_in(c)%snowhland, pcols   ,c   )
+<     enddo
+< 
+<   end subroutine get_met_srf1
+---
+>   end subroutine get_srf_flds
+718a768,770
+> if (masterproc) then
+>   write(iulog,*) 'mscheck: begchunk,endchunk',begchunk, endchunk,pver,ncol 
+> end if
+723a776,781
+> if (masterproc) then
+>   if ( c == 70 .and. i == 1 .and. k == 1 ) then
+>   write(iulog,*) 'mscheck: metdata_in',state(c)%t(i,k),met_t(i,k,c), met_rlx(k)*zeta_rlx*met_t(i,k,c)
+>   end if
+> end if
+> 
+753d810
+<     if (masterproc) then
+757d813
+<     endif
+810d865
+<     if (masterproc) then
+816d870
+<     endif
+899d952
+<     if (masterproc) then
+905d957
+<     endif
+1003c1055
+<     met_winds_on_walls = met_cell_wall_winds
+---
+>     met_winds_on_walls = cell_wall_winds
+1064a1117
+> 
+1067a1121,1122
+> !!    write(*,*) 'curr_mod_time: ', curr_mod_time, next_mod_time, yr, mon, day, ncsec
+> 
+1074c1129
+<   subroutine check_files()
+---
+>   subroutine check_files(grid)
+1080a1136,1137
+>     type (T_FVDYCORE_GRID), intent(in) :: grid
+> 
+1091a1149,1156
+> 
+>           !ms!call pio_closefile( curr_fileid )
+>           !ms!deallocate( curr_data_times )
+>           !ms!allocate( curr_data_times( size( next_data_times ) ) )
+> 
+>           !ms!call open_met_datafile( grid, curr_filename, curr_fileid,
+>           !curr_data_times, met_datapath )
+> 
+1093c1158
+<           call open_met_datafile( next_filename, next_fileid, next_data_times, met_data_path )
+---
+>           call open_met_datafile( grid, next_filename, next_fileid, next_data_times, met_datapath )
+1094a1160,1167
+> !MS!    else ! not useful....=.=
+> !       ! open next file...
+> 
+> !       call pio_closefile( curr_fileid )
+> !       deallocate( curr_data_times )
+> !       allocate( curr_data_times( size( next_data_times ) ) )
+> 
+> !       call open_met_datafile( grid, curr_filename, curr_fileid,curr_data_times, met_datapath )
+1102c1175
+<           if (masterproc) then
+---
+>           if (grid%iam == 0) then
+1104c1177
+<              if( met_remove_file ) then
+---
+>              if( remove_met_file ) then
+1161c1234
+<     if ( len_trim(met_filenames_list) .eq. 0) then
+---
+>     if ( len_trim(filenames_list) .eq. 0) then
+1180c1253,1254
+<        ! open met_filenames_list
+---
+>      if (masterproc) then
+>        ! open filenames_list
+1182c1256,1257
+<        write(iulog,*) 'incr_flnm: open met_filenames_list : ',met_filenames_list 
+---
+>        write(iulog,*) 'incr_flnm: open filenames_list : ',filenames_list 
+>      end if 
+1184c1259
+<        open( unit=unitnumber, file=met_filenames_list, iostat=ios, status="OLD")
+---
+>        open( unit=unitnumber, file=filenames_list, iostat=ios, status="OLD")
+1186c1261
+<           call endrun('not able to open met_filenames_list file: '//met_filenames_list)
+---
+>           call endrun('not able to open filenames_list file: '//filenames_list)
+1192c1267
+<           call endrun('not able to increment file name from met_filenames_list file: '//met_filenames_list)
+---
+>           call endrun('not able to increment file name from filenames_list file: '//filenames_list)
+1197c1272
+<              call endrun('not able to increment file name from met_filenames_list file: '//met_filenames_list)
+---
+>              call endrun('not able to increment file name from filenames_list file: '//filenames_list)
+1203c1278
+<           call endrun('not able to increment file name from met_filenames_list file: '//met_filenames_list)
+---
+>           call endrun('not able to increment file name from filenames_list file: '//filenames_list)
+1211,1212c1286,1288
+<     write(iulog,*) 'incr_flnm: new filename = ',incr_filename
+< 
+---
+>     if (masterproc) then
+>       write(iulog,*) 'incr_flnm: new filename = ',incr_filename
+>     end if 
+1422a1499,1502
+>     if (masterproc) then
+>       write(iulog,*) 'mlschk: find_times ',datatimem, datatimep, curr_mod_time
+>     end if
+> 
+1432c1512
+<        if(met_cell_wall_winds) then
+---
+>        if(cell_wall_winds) then
+1443c1523
+<        if(met_cell_wall_winds) then
+---
+>        if(cell_wall_winds) then
+1487a1568,1570
+>     if (masterproc) then
+>       write(iulog,*)'mscheck: nudging timelevel:', recnos(1), recnos(2)
+>     end if   
+1504c1587
+<        if (met_cell_wall_winds) then 
+---
+>        if (cell_wall_winds) then 
+1542c1625,1640
+<        endif ! met_cell_wall_winds
+---
+>        endif ! cell_wall_winds
+> 
+>     ! 2-D feilds
+> 
+>        call infld(shflx_name, fids(i), 'lon', 'lat',  1, pcols, begchunk, endchunk, &
+>             met_shflxi(i)%data, readvar, grid_map='PHYS',timelevel=recnos(i))
+>        call infld(Qflx_name, fids(i), 'lon', 'lat',  1, pcols, begchunk, endchunk, &
+>             met_qflxi(i)%data, readvar, grid_map='PHYS',timelevel=recnos(i))
+>        call infld('TAUX', fids(i), 'lon', 'lat',  1, pcols, begchunk, endchunk, &
+>             met_tauxi(i)%data, readvar, grid_map='PHYS',timelevel=recnos(i))
+>        call infld('TAUY', fids(i), 'lon', 'lat',  1, pcols, begchunk, endchunk, &
+>             met_tauyi(i)%data, readvar, grid_map='PHYS',timelevel=recnos(i))
+>        if (has_ts) then
+>           call infld('TS', fids(i), 'lon', 'lat',  1, pcols, begchunk, endchunk, &
+>                met_tsi(i)%data, readvar, grid_map='PHYS',timelevel=recnos(i))
+>        endif
+1556,1558d1653
+<     ! 2-D feilds
+<     call read_phys_srf_flds( )
+< 
+1577,1606d1671
+< !------------------------------------------------------------------------------
+< !------------------------------------------------------------------------------
+<   subroutine read_phys_srf_flds( )
+<     use ncdio_atm,          only: infld
+< 
+<     integer :: i, recnos(2)
+<     type(file_desc_t) :: fids(2)
+<     logical :: readvar
+< 
+<     call find_times( recnos, fids, datatimem, datatimep, curr_mod_time )
+<     do i=1,2
+< 
+<        call infld(met_shflx_name, fids(i), 'lon', 'lat',  1, pcols, begchunk, endchunk, &
+<             met_shflxi(i)%data, readvar, grid_map='PHYS',timelevel=recnos(i))
+<        call infld(met_qflx_name, fids(i), 'lon', 'lat',  1, pcols, begchunk, endchunk, &
+<             met_qflxi(i)%data, readvar, grid_map='PHYS',timelevel=recnos(i))
+<        call infld('TAUX', fids(i), 'lon', 'lat',  1, pcols, begchunk, endchunk, &
+<             met_tauxi(i)%data, readvar, grid_map='PHYS',timelevel=recnos(i))
+<        call infld('TAUY', fids(i), 'lon', 'lat',  1, pcols, begchunk, endchunk, &
+<             met_tauyi(i)%data, readvar, grid_map='PHYS',timelevel=recnos(i))
+<        if ( .not.met_srf_feedback ) then
+<           call infld('SNOWH', fids(i), 'lon', 'lat',  1, pcols, begchunk, endchunk, &
+<                met_snowhi(i)%data, readvar, grid_map='PHYS',timelevel=recnos(i))
+<        endif
+<        if (has_ts) then
+<           call infld('TS', fids(i), 'lon', 'lat',  1, pcols, begchunk, endchunk, &
+<                met_tsi(i)%data, readvar, grid_map='PHYS',timelevel=recnos(i))
+<        endif
+<     enddo
+<   end subroutine read_phys_srf_flds
+1610,1641d1674
+<   subroutine interp_phys_srf_flds( )
+< 
+<     real(r4) :: fact1, fact2
+<     real(r8) :: deltat
+< 
+<     deltat = datatimep - datatimem
+<     fact1 = (datatimep - curr_mod_time)/deltat
+<     fact2 = D1_0-fact1
+< 
+<     if (masterproc) then
+<       write(iulog,*)'msc:met1716',curr_mod_time,fact1, fact2
+<     endif
+< 
+< !!MS! for snapshot nudging: force nudging to the latest one
+<     fact1 = D1_0
+<     fact2 = D0_0
+< !!ms!
+< 
+<     met_shflx(:,:) = fact1*met_shflxi(nm)%data(:,:) + fact2*met_shflxi(np)%data(:,:)
+<     met_qflx(:,:) = fact1*met_qflxi(nm)%data(:,:) + fact2*met_qflxi(np)%data(:,:)
+<     met_taux(:,:) = fact1*met_tauxi(nm)%data(:,:) + fact2*met_tauxi(np)%data(:,:)
+<     met_tauy(:,:) = fact1*met_tauyi(nm)%data(:,:) + fact2*met_tauyi(np)%data(:,:)
+<     if ( .not.met_srf_feedback ) then
+<        met_snowh(:,:) = fact1*met_snowhi(nm)%data(:,:) + fact2*met_snowhi(np)%data(:,:)
+<     endif
+<     if (has_ts) then
+<        met_ts(:,:) = fact1*met_tsi(nm)%data(:,:) + fact2*met_tsi(np)%data(:,:)
+<     endif
+< 
+<   end subroutine interp_phys_srf_flds
+< !------------------------------------------------------------------------------
+< !------------------------------------------------------------------------------
+1679a1713,1714
+> 
+> 
+1684c1719
+< !!MS! for snapshot nudging: force nudging to the latest one
+---
+> !!MS! for snapshot nudging: force nudging to the latest one 
+1699c1734,1737
+<     call interp_phys_srf_flds()
+---
+>     met_shflx(:,:) = fact1*met_shflxi(nm)%data(:,:) + fact2*met_shflxi(np)%data(:,:)
+>     met_qflx(:,:) = fact1*met_qflxi(nm)%data(:,:) + fact2*met_qflxi(np)%data(:,:)
+>     met_taux(:,:) = fact1*met_tauxi(nm)%data(:,:) + fact2*met_tauxi(np)%data(:,:)
+>     met_tauy(:,:) = fact1*met_tauyi(nm)%data(:,:) + fact2*met_tauyi(np)%data(:,:)
+1705c1743
+<     if ( .not. met_cell_wall_winds ) then
+---
+>     if ( .not. cell_wall_winds ) then
+1733d1770
+< 
+1741a1779
+> 
+1765c1803
+<   subroutine open_met_datafile( fname, fileid, times, datapath, check_dims, grid )
+---
+>   subroutine open_met_datafile( grid, fname, fileid, times, datapath, check_dims )
+1771a1810
+>     type (T_FVDYCORE_GRID), intent(in) :: grid
+1777d1815
+<     type (T_FVDYCORE_GRID), optional, intent(in) :: grid
+1787a1826,1829
+>     im         = grid%im
+>     jm         = grid%jm
+>     km         = grid%km
+>     
+1807c1849
+<     if (masterproc) write(iulog,*) 'open_met_datafile: ',trim(filen)
+---
+>     if (grid%iam == 0) write(iulog,*)'open_met_datafile: ',trim(filen)
+1837,1841c1879
+<     if (present(check_dims) .and. present(grid)) then
+<        im         = grid%im
+<        jm         = grid%jm
+<        km         = grid%km
+< 
+---
+>     if (present(check_dims)) then
+1959,1960c1997,1998
+<     p_top = ps0 * exp( - met_rlx_top/h0 )
+<     p_bot = ps0 * exp( - met_rlx_bot/h0 )
+---
+>     p_top = ps0 * exp( - rlx_top_km/h0 )
+>     p_bot = ps0 * exp( - rlx_bot_km/h0 )
+1976c2014
+<        met_rlx = met_max_rlx
+---
+>        met_rlx = max_rlx
+1979c2017
+<     if ( any( met_rlx(:) /= met_max_rlx) ) then
+---
+>     if ( any( met_rlx(:) /= max_rlx) ) then
+1999c2037
+<           met_rlx(k) = met_max_rlx*real( k - k_top ) / real(k_cnt)
+---
+>           met_rlx(k) = max_rlx*real( k - k_top ) / real(k_cnt)
+2005c2043
+<       write(iulog,*) '  mlschk: k = ',plev-k+1,k, plev, met_BLC_factor(plev-k+1)
+---
+>       write(iulog,*) '  mlschk: k = ',plev-k+1,k, plev, BLC_factor(plev-k+1)
+2007,2008c2045,2046
+<       if (met_BLC_factor(plev-k+1) > -1e-8_r8) then
+<         met_rlx(k) = met_BLC_factor(plev-k+1)*met_max_rlx
+---
+>       if (BLC_factor(plev-k+1) > -1e-8_r8) then
+>         met_rlx(k) = BLC_factor(plev-k+1)*max_rlx
+diff -r ./mo_drydep.F90 ../../SourceMods_NorESM1_org/src.cam/mo_drydep.F90
+69,70d68
+<   integer :: soam_ndx, soai_ndx, soat_ndx, soab_ndx, soax_ndx, &
+<              sogm_ndx, sogi_ndx, sogt_ndx, sogb_ndx, sogx_ndx
+75,76d72
+<   logical :: soam_dd, soai_dd, soat_dd, soab_dd, soax_dd, &
+<              sogm_dd, sogi_dd, sogt_dd, sogb_dd, sogx_dd
+190c186
+<     use camsrfexch,      only : cam_in_t     
+---
+>     use camsrfexch_types,only : cam_in_t     
+274c270
+< !MS    call get_met_fields(lndfrac, met_ocnfrac, met_icefrac, lchnk, ncol)
+---
+>     call get_met_fields(lndfrac, met_ocnfrac, met_icefrac, lchnk, ncol)
+292,293c288,289
+<                    !MS      ocnfrc=met_ocnfrac,icefrc=met_icefrac, beglandtype=7, endlandtype=8 )
+<                          ocnfrc=ocnfrac,icefrc=icefrac, beglandtype=7, endlandtype=8 )
+---
+> !                         ocnfrc=met_ocnfrac,icefrc=met_icefrac, beglandtype=7, endlandtype=8 )
+>                          ocnfrc=ocnfrac,icefrc=icefrac, beglandtype=7,endlandtype=8 )
+603,612d598
+<     soam_ndx    = get_spc_ndx( 'SOAM' )
+<     soai_ndx    = get_spc_ndx( 'SOAI' )
+<     soat_ndx    = get_spc_ndx( 'SOAT' )
+<     soab_ndx    = get_spc_ndx( 'SOAB' )
+<     soax_ndx    = get_spc_ndx( 'SOAX' )
+<     sogm_ndx    = get_spc_ndx( 'SOGM' )
+<     sogi_ndx    = get_spc_ndx( 'SOGI' )
+<     sogt_ndx    = get_spc_ndx( 'SOGT' )
+<     sogb_ndx    = get_spc_ndx( 'SOGB' )
+<     sogx_ndx    = get_spc_ndx( 'SOGX' )
+632,641d617
+<     soam_dd    = has_drydep( 'SOAM' )
+<     soai_dd    = has_drydep( 'SOAI' )
+<     soat_dd    = has_drydep( 'SOAT' )
+<     soab_dd    = has_drydep( 'SOAB' )
+<     soax_dd    = has_drydep( 'SOAX' )
+<     sogm_dd    = has_drydep( 'SOGM' )
+<     sogi_dd    = has_drydep( 'SOGI' )
+<     sogt_dd    = has_drydep( 'SOGT' )
+<     sogb_dd    = has_drydep( 'SOGB' )
+<     sogx_dd    = has_drydep( 'SOGX' )
+1547d1522
+<     use phys_control,  only : phys_getopts
+1593,1596d1567
+<     logical :: prog_modal_aero
+< 
+<     ! determine if modal aerosols are active so that fraction_landuse array is initialized for modal aerosal dry dep
+<     call phys_getopts(prog_modal_aero_out=prog_modal_aero)
+1664,1685c1635
+< !
+<     soam_ndx   = get_spc_ndx( 'SOAM' )
+<     soai_ndx   = get_spc_ndx( 'SOAI' )
+<     soat_ndx   = get_spc_ndx( 'SOAT' )
+<     soab_ndx   = get_spc_ndx( 'SOAB' )
+<     soax_ndx   = get_spc_ndx( 'SOAX' )
+<     sogm_ndx   = get_spc_ndx( 'SOGM' )
+<     sogi_ndx   = get_spc_ndx( 'SOGI' )
+<     sogt_ndx   = get_spc_ndx( 'SOGT' )
+<     sogb_ndx   = get_spc_ndx( 'SOGB' )
+<     sogx_ndx   = get_spc_ndx( 'SOGX' )
+<     soam_dd    = has_drydep ( 'SOAM' )
+<     soai_dd    = has_drydep ( 'SOAI' )
+<     soat_dd    = has_drydep ( 'SOAT' )
+<     soab_dd    = has_drydep ( 'SOAB' )
+<     soax_dd    = has_drydep ( 'SOAX' )
+<     sogm_dd    = has_drydep ( 'SOGM' )
+<     sogi_dd    = has_drydep ( 'SOGI' )
+<     sogt_dd    = has_drydep ( 'SOGT' )
+<     sogb_dd    = has_drydep ( 'SOGB' )
+<     sogx_dd    = has_drydep ( 'SOGX' )
+< !
+---
+> 
+1762c1712
+<     if (drydep_method == DD_XLND .and. (.not.prog_modal_aero)) then
+---
+>     if (drydep_method == DD_XLND) then
+1898,1902d1847
+< 
+<     if (drydep_method == DD_XLND) then
+<        return
+<     endif
+< 
+2578c2523
+<        rdc(i) = 100._r8*(1._r8 + 1000._r8/(solar_flux(i) + 10._r8))/(1._r8 + 1000._r8*slope)
+---
+>        rdc(i) = 100._r8*(1. + 1000._r8/(solar_flux(i) + 10.))/(1. + 1000._r8*slope)
+2953c2898
+<              case( 'CB1', 'CB2', 'OC1', 'OC2', 'SOAM', 'SOAI', 'SOAT', 'SOAB','SOAX' )
+---
+>              case( 'CB1', 'CB2', 'OC1', 'OC2' )
+2968c2913
+<                    where( fr_lnduse(:ncol,lt) .and. snow(:ncol) < 0.01_r8  )
+---
+>                    where( fr_lnduse(:ncol,lt) .and. snow(:ncol) < 0.01  )
+3009,3042c2954,2955
+< !
+< ! SOG species
+< !
+<     if( sogm_ndx > 0) then
+<        if( has_dvel(sogm_ndx) ) then
+<           dvel(:ncol,sogm_ndx) = dvel(:ncol,ch3cooh_ndx)
+<           dflx(:ncol,sogm_ndx) = term(:ncol) * dvel(:ncol,sogm_ndx) * mmr(:ncol,plev,sogm_ndx)
+<        end if
+<     end if
+<     if( sogi_ndx > 0) then
+<        if( has_dvel(sogi_ndx) ) then
+<           dvel(:ncol,sogi_ndx) = dvel(:ncol,ch3cooh_ndx)
+<           dflx(:ncol,sogi_ndx) = term(:ncol) * dvel(:ncol,sogi_ndx) * mmr(:ncol,plev,sogi_ndx)
+<        end if
+<     end if
+<     if( sogt_ndx > 0) then
+<        if( has_dvel(sogt_ndx) ) then
+<           dvel(:ncol,sogt_ndx) = dvel(:ncol,ch3cooh_ndx)
+<           dflx(:ncol,sogt_ndx) = term(:ncol) * dvel(:ncol,sogt_ndx) * mmr(:ncol,plev,sogt_ndx)
+<        end if
+<     end if
+<     if( sogb_ndx > 0) then
+<        if( has_dvel(sogb_ndx) ) then
+<           dvel(:ncol,sogb_ndx) = dvel(:ncol,ch3cooh_ndx)
+<           dflx(:ncol,sogb_ndx) = term(:ncol) * dvel(:ncol,sogb_ndx) * mmr(:ncol,plev,sogb_ndx)
+<        end if
+<     end if
+<     if( sogx_ndx > 0) then
+<        if( has_dvel(sogx_ndx) ) then
+<           dvel(:ncol,sogx_ndx) = dvel(:ncol,ch3cooh_ndx)
+<           dflx(:ncol,sogx_ndx) = term(:ncol) * dvel(:ncol,sogx_ndx) * mmr(:ncol,plev,sogx_ndx)
+<        end if
+<     end if
+< !
+---
+> 
+> 
+Only in ./: radheat.F90
+Only in ./: rrtmg_lw_rtrnmc.f90
+diff -r ./runtime_opts.F90 ../../SourceMods_NorESM1_org/src.cam/runtime_opts.F90
+21d20
+< use cam_instance,    only: inst_suffix
+269a269,273
+> ! Diagnostics options
+> 
+> character(len=8) :: diag_cnst_conv_tend ! output constituent tendencies due to convection
+>                                         ! 'none', 'q_only' or 'all'
+> 
+285d288
+< logical :: spectralflux  ! calculate fluxes (up and down) per band. Default: FALSE
+308d310
+< character(len=200) :: scm_clubb_iop_name
+313a316,334
+> #if ( defined OFFLINE_DYN )
+> logical :: met_remove_file
+> logical :: met_cell_wall_winds
+> character(len=256) :: met_data_file
+> character(len=256) :: met_data_path
+> character(len=256) :: met_filenames_list
+> real(r8) :: met_rlx_top ! (km) top of relaxation region of winds for offline waccm
+> real(r8) :: met_rlx_bot ! (km) bottom of relaxation region of winds for offline waccm
+> real(r8) :: met_max_rlx ! maximum of vertical relaxation function in bottom portion (default is 1.0)
+> logical  :: met_fix_mass ! switch to turn on/off mass fixer for offline driver (default is TRUE)
+> character(len=16)  :: met_shflx_name ! srf heat flux field name in met data file
+> character(len=16)  :: met_qflx_name  ! water vapor flux field name in met data file
+> real(r8)           :: met_shflx_factor ! multiplication factor for srf heat flux 
+> real(r8)           :: met_qflx_factor  ! multiplication factor for water vapor flux 
+> !!!#if ( defined OFFLINE_DYN_BLC )
+> real(r8)           :: met_BLC_factor(20)   ! multiplication factor for energy of ATM BL
+> !!!!#endif /* OFFLINE_DYN_BLC */
+> #endif
+> 
+350c371
+<    
+---
+>    use phys_buffer,      only: pbuf_defaultopts, pbuf_setopts
+357a379
+>    use cam_diagnostics,  only: diag_defaultopts, diag_setopts
+362c384,386
+<    use carma_flags_mod,  only: carma_readnl
+---
+> #if ( defined OFFLINE_DYN )
+>    use metdata,          only: offline_met_defaultopts, offline_met_setopts
+> #endif
+371d394
+<    use ref_pres,            only: ref_pres_readnl
+374,376d396
+<    use macrop_driver,       only: macrop_driver_readnl
+<    use microp_driver,       only: microp_driver_readnl
+<    use microp_aero,         only: microp_aero_readnl
+400,406d419
+<    use vertical_diffusion,  only: vd_readnl
+<    use cam_history_support, only: fieldname_len, fieldname_lenp2
+<    use cam_diagnostics,     only: diag_readnl
+< #if ( defined OFFLINE_DYN )
+<    use metdata,             only: metdata_readnl
+< #endif
+< 
+427a441,442
+>    integer, parameter :: fieldname_len = 16
+>    integer, parameter :: fieldname_lenp2 = fieldname_len + 2
+460a476,481
+> !
+> ! TBH:  NOTE:  Move the definition of cam_inparm outside of this routine 
+> ! TBH:  as soon as common blocks in comctl.h, comtfc.h, 
+> ! TBH:  comsol.h, comadj.h, and perturb.h have been converted to 
+> ! TBH:  modules.  
+> !        
+490a512,514
+>   ! diagnostic options
+>   namelist /cam_inparm/ diag_cnst_conv_tend
+> 
+495c519
+<   namelist /cam_inparm/ iradsw, iradlw, iradae, irad_always, spectralflux
+---
+>   namelist /cam_inparm/ iradsw, iradlw, iradae, irad_always
+509c533
+<                         scm_diurnal_avg,scm_crm_mode, scm_clubb_iop_name
+---
+>                         scm_diurnal_avg,scm_crm_mode
+510a535,542
+> #if ( defined OFFLINE_DYN )
+>   ! offline meteorology parameters
+>   namelist /cam_inparm/ met_data_file, met_data_path, met_remove_file, met_cell_wall_winds, &
+>                         met_filenames_list, met_rlx_top, met_rlx_bot, met_max_rlx, &
+>                         met_fix_mass, met_shflx_name, met_qflx_name, &
+>                         met_shflx_factor, met_qflx_factor,           &
+>                         met_BLC_factor
+> #endif 
+542a575,582
+>    ! physics buffer
+>    call pbuf_defaultopts( &
+>       pbuf_global_allocate_out = pbuf_global_allocate )
+> 
+>    ! diagnostics
+>    call diag_defaultopts( &
+>       diag_cnst_conv_tend_out = diag_cnst_conv_tend )
+> 
+552,553c592
+<       irad_always_out = irad_always, &
+<       spectralflux_out = spectralflux )
+---
+>       irad_always_out = irad_always )
+570a610,629
+> #if ( defined OFFLINE_DYN )
+> !
+> ! Get runtime defualts for the metdata module
+> !
+>    call offline_met_defaultopts( met_data_file_out = met_data_file, &
+>                                  met_data_path_out = met_data_path, &
+>                                  met_remove_file_out = met_remove_file, &
+>                                  met_cell_wall_winds_out = met_cell_wall_winds, &
+>                                  met_filenames_list_out = met_filenames_list, &
+>                                  met_rlx_top_km_out = met_rlx_top, &
+>                                  met_rlx_bot_km_out = met_rlx_bot, &
+>                                  met_max_rlx_out = met_max_rlx, &
+>                                  met_BLC_factor_out = met_BLC_factor, &
+>                                  met_fix_mass_out = met_fix_mass, &
+>                                  met_shflx_name_out = met_shflx_name, &
+>                                  met_qflx_name_out = met_qflx_name, &
+>                                  met_shflx_factor_out = met_shflx_factor, &
+>                                  met_qflx_factor_out = met_qflx_factor )
+> #endif
+> 
+577,578c636
+<         scm_crm_mode_out=scm_crm_mode, &
+<         scm_clubb_iop_name_out=scm_clubb_iop_name)
+---
+>         scm_crm_mode_out=scm_crm_mode)
+716c774
+<             hfilename_spec(t) = '%c.cam' // trim(inst_suffix) // '.h%t.%y-%m.nc'        ! Monthly files
+---
+>             hfilename_spec(t) = '%c.cam2.h%t.%y-%m.nc'        ! Monthly files
+718c776
+<             hfilename_spec(t) = '%c.cam' // trim(inst_suffix) // '.h%t.%y-%m-%d-%s.nc'
+---
+>             hfilename_spec(t) = '%c.cam2.h%t.%y-%m-%d-%s.nc'
+756a815,822
+>    ! physics buffer
+>    call pbuf_setopts( &
+>       pbuf_global_allocate_in = pbuf_global_allocate )
+> 
+>    ! diagnostics
+>    call diag_setopts( &
+>       diag_cnst_conv_tend_in = diag_cnst_conv_tend )
+> 
+765,766c831
+<       irad_always_in = irad_always, &
+<       spectralflux_in = spectralflux )
+---
+>       irad_always_in = irad_always )
+796,797c861
+<                             scm_crm_mode_in=scm_crm_mode, &
+<                             scm_clubb_iop_name_in=scm_clubb_iop_name)
+---
+>                             scm_crm_mode_in=scm_crm_mode)
+799a864,882
+> #if ( defined OFFLINE_DYN )
+> ! 
+> ! Set runtime options for comhd
+> !
+>    call offline_met_setopts( met_data_file_in = met_data_file, &
+>                              met_data_path_in = met_data_path, &
+>                              met_remove_file_in = met_remove_file, &
+>                              met_cell_wall_winds_in = met_cell_wall_winds, &
+>                              met_filenames_list_in = met_filenames_list, &
+>                              met_rlx_top_km_in = met_rlx_top, &
+>                              met_rlx_bot_km_in = met_rlx_bot, &
+>                              met_max_rlx_in = met_max_rlx, &
+>                              met_BLC_factor_in = met_BLC_factor , &
+>                              met_fix_mass_in = met_fix_mass, &
+>                              met_shflx_name_in = met_shflx_name, &
+>                              met_qflx_name_in = met_qflx_name, &
+>                              met_shflx_factor_in = met_shflx_factor, &
+>                              met_qflx_factor_in = met_qflx_factor )
+> #endif
+816d898
+<    call ref_pres_readnl(nlfilename)
+819,821d900
+<    call macrop_driver_readnl(nlfilename)
+<    call microp_driver_readnl(nlfilename)
+<    call microp_aero_readnl(nlfilename)
+836d914
+<    call carma_readnl(nlfilename)
+847d924
+<    call diag_readnl(nlfilename)
+851,854d927
+<    call vd_readnl(nlfilename)
+< #if ( defined OFFLINE_DYN )
+<    call metdata_readnl(nlfilename)
+< #endif
+1011a1085,1103
+> #if (defined OFFLINE_DYN)
+> !
+> ! Offline dynamics parameters
+> !
+>    call mpibcast (met_data_file  ,len(met_data_file) ,mpichar,0,mpicom)
+>    call mpibcast (met_data_path  ,len(met_data_path) ,mpichar,0,mpicom)
+>    call mpibcast (met_remove_file    ,1 ,mpilog, 0, mpicom )
+>    call mpibcast (met_cell_wall_winds,1 ,mpilog, 0, mpicom )
+>    call mpibcast (met_filenames_list ,len(met_filenames_list),mpichar,0,mpicom)
+>    call mpibcast (met_rlx_top,        1 ,mpir8,  0, mpicom )
+>    call mpibcast (met_rlx_bot,        1 ,mpir8,  0, mpicom )
+>    call mpibcast (met_max_rlx,        1 ,mpir8,  0, mpicom )
+>    call mpibcast (met_fix_mass,       1 ,mpilog, 0, mpicom )
+>    call mpibcast (met_qflx_name      ,len(met_qflx_name),     mpichar,0,mpicom)
+>    call mpibcast (met_shflx_name     ,len(met_shflx_name),    mpichar,0,mpicom)
+>    call mpibcast (met_qflx_factor    ,1, mpir8,  0, mpicom )
+>    call mpibcast (met_shflx_factor   ,1, mpir8,  0, mpicom )
+>    call mpibcast (met_BLC_factor   ,20, mpir8,  0, mpicom )
+> #endif
+1028a1121,1123
+>    ! Diagnostic options
+>    call mpibcast (diag_cnst_conv_tend, len(diag_cnst_conv_tend), mpichar, 0, mpicom)
+> 
+1037d1131
+<    call mpibcast (spectralflux,1, mpilog, 0, mpicom)

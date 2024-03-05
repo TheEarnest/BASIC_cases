@@ -1,0 +1,45 @@
+#! /bin/bash
+###############################################################################
+# Launcing Model
+#------------------------------------------------------------------------------
+. ${fhome}/func_debug_Setting_$DebugLev
+#
+JobStartTime=`date`; echo ${Line_Break}; echo ${Line_Break}
+JobName=func_launch_${Model}
+# 
+echo "Starting "${JobName}" ...... "
+export SLURM_MEM_PER_CPU=1920
+unset SLURM_MEM_PER_NODE
+unset SLURM_MEM_PER_GPU
+
+###############################################################################
+. ${fhome}/func_getModelSettings
+Model_script_dir=${Model_script_base}/${CaseName}
+modname=ccsm.exe
+#echo "${iCoreStart}-${iCoreEnd} ./${modname} " > ${Model_work_dir}/mpmd.lst
+cd ${Model_work_dir}
+ln -sf is_DI_data_ready_check is_DI_data_ready
+yy="????"; mm="??"; dd="??"; ss="?????"
+restartfile=`ls ${Model_restart_file}` || restartfile="None"
+
+cd ${Model_script_dir}
+buildscript=`ls ${CaseName}*.build`
+jobscript=`ls ${CaseName}*.run`; 
+SbatchHeading=`grep "##SBATCH  --time=" ./${jobscript}` || SbatchHeading="None"
+if [ "${SbatchHeading}" == "None" ]; then
+  sed -i s/"#SBATCH "/"##SBATCH "/g  ./${jobscript}
+  #sed -i s/"mpirun .\/${modname} "/"mpirun -f .\/hostfile_${Model} .\/${modname}"/g  ./${jobscript} 
+  #sed -i s/"srun --ntasks".*/"srun --ntasks ${CPU4model} --exclusive .\/${modname} > .\/${modname}.log.$LID"/g  ./${jobscript}
+fi
+
+#ln -sf ${scripthome}/hostfile_${Model} ${Model_work_dir}/hostfile_${Model}
+[ "${restartfile}" != "None" ] && ./xmlchange -file env_run.xml -id CONTINUE_RUN -val TRUE
+
+./${buildscript}
+./${jobscript} & 
+###############################################################################
+echo ${JobStartTime}
+echo `date`" || "${JobName}
+echo ${Line_Break}
+
+

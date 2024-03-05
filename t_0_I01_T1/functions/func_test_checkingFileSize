@@ -1,0 +1,26 @@
+#! /bin/bash
+###############################################################################
+JobStartTime=`date`; echo ${Line_Break}; echo ${Line_Break}
+JobName=func_checkingFileSize
+tempPrefix=t_${JobName}
+echo "Starting "${JobName}" ...... "
+###############################################################################
+. ${fhome}/func_debug_Setting_${DebugLev}
+Basefile="/cluster/home/earnest/Analysis/stercp/Spectral_nudging/${supported_models}/${Model}/Model_template.nc"
+BaseSize=`du ${Basefile} | awk -F " " '{print $1}'`
+BaseSize87=`echo "scale=0;(${BaseSize}*0.87)/1.0"| bc -l `
+file2check="/cluster/work/users/earnest/stercp_exp/s1SP_en/archive/CAM4_s1SP_en/atm/hist/CAM4_s1SP_en.cam2.h1.1982-01-29-64800.nc"
+is_filesize_correct="False"
+while [ "${is_filesize_correct}" == "False"  ]; do
+  echo "${Model}: file size check fail ... ${file2check} ..." 
+  sleep 0.07s
+  filesize=`du ${file2check} | awk -F " " '{print $1}'`
+  if [ ${filesize} -gt ${BaseSize87} ]; then
+    is_filesize_correct=.true.
+  fi
+done
+echo ${file2check}" size checked."
+###############################################################################
+echo ${JobStartTime}
+echo `date`" || "${JobName}
+echo ${Line_Break}

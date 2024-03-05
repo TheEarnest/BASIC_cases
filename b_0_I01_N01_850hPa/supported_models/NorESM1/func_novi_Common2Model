@@ -1,0 +1,34 @@
+#! /bin/bash
+###############################################################################
+. ${fhome}/func_debug_Setting_$DebugLev
+JobStartTime=`date`; echo ${Line_Break}; echo ${Line_Break}
+JobName=func_vi_Common2Model 
+#tempPrefix=t_${JobName}
+echo "Starting "${JobName}" ...... "
+###############################################################################
+#SourceData=${DataIngestionCommPool}/${Model}/${DataIngestionCommPrefix}_${yy}${mm}${dd}_${ss}.nc
+
+SPN_dataDir=${DIData}/${Model}
+SourceData=${SPN_dataDir}/${tempPrefix}_CL_sync
+SNworkhome=${SPN_dataDir}/work
+if [ -f ${SourceData} ]; then
+
+  cd ${SNworkhome}
+  rm -f ${SNworkhome}/*
+  cp -f ${SupportData}/func_vertinterpolation.ncl .
+  if [ ! -f ${SPN_dataDir}/Model_hybab.nc ]; then
+    cp -f ${SupportData}/Model_hybab.nc ${SPN_dataDir}/ ; fi
+
+  SDname=${tempPrefix}_SourceData.nc
+  SHRname=${DIData}/hybab_ERA_Interim_L60_N.nc
+  TDname=${tempPrefix}_TargetData.nc
+  TLname=${tempPrefix}_template.nc
+  TLHRname=${SPN_dataDir}/Model_hybab.nc
+
+  cp ${SourceData} ${tempPrefix}_ML_sync
+
+fi # end of Model_output exist
+###############################################################################
+echo ${JobStartTime}
+echo `date`" || "${JobName}
+echo ${Line_Break}

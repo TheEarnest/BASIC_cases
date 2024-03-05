@@ -1,0 +1,15 @@
+#! /bin/bash
+###############################################################################
+# ensemble info
+#------------------------------------------------------------------------------
+. ${fhome}/func_debug_Setting_${DebugLev}
+
+cd ${DataIngestionCommPool}/../Data/${Model}/
+${CDO} -sp2sp,${Csp_res} ${DataIngestionModelData} ${tempPrefix}_CL_sync_visp
+#${CDO} -add ${tempPrefix}_sync_visp ${sp_res} ${tempPrefix}_sync_sp
+${CDO} -remapcon,${SupportData}/Model_griddes.txt -sp2gp -dv2uv ${tempPrefix}_CL_sync_visp ${tempPrefix}_CL_sync_tuvlsp_gp
+${CDO} -delete,name=sp ${tempPrefix}_CL_sync_tuvlsp_gp ${tempPrefix}_CL_sync_tuv_gp
+${CDO} -merge ${tempPrefix}_CL_sync_tuv_gp ${tempPrefix}_CL_PS ${tempPrefix}_CL_sync_gp
+###############################################################################
+echo `date`" || "${JobName}
+echo ${Line_Break}

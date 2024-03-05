@@ -1,0 +1,70 @@
+#! /bin/bash
+###############################################################################
+. ${fhome}/func_debug_Setting_${DebugLev}
+JobStartTime=`date`; echo ${Line_Break}; echo ${Line_Break}
+JobName=func_preprocessing_1st_timestep
+echo "Starting "${JobName}" ...... "
+###############################################################################
+# -----------------------------------------------------
+# data for first timestep
+# (searching order: model archive, model case, model supporting data)
+# -----------------------------------------------------
+#envConfigFilePath=${supported_models}/${Model}; . ${fhome}/func_getenvxmlValue
+
+
+Model_output_name=`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "output name"`
+Model_output=${Model_work_dir}/${Model_output_name}
+
+is_file_exist=0
+if [ -f ${Model_output} ]; then
+  WaitingCounter=0
+  file2check=${Model_output}
+  . ${fhome}/func_FileIsWriting 
+  echo ${Model_output}' checked and ready ...'
+  is_file_exist=1
+fi
+# looking for file from the 'cases'
+if [ "${is_file_exist}" == "0" ]; then
+  Model_work_dir_org=${Model_work_dir}
+  Model_work_dir=${Swork}/cases
+  Model_output=${Model_work_dir}/${Model_output_name}
+  if [ -f ${Model_output} ]; then
+    cp ${Model_output} ${Model_work_dir}/${Model_output_name}
+    is_file_exist=1
+  fi
+  Model_work_dir=${Model_work_dir_org}
+fi
+
+# looking for file from previous/old run
+if [ "${is_file_exist}" == "0" ]; then
+  cd ${Model_work_dir}
+  filename=`ls *.cam2.h1.????-??-??-?????.nc` || filename="None"
+  if [ "${filename}" != "None" ]; then
+    Model_output=${Model_work_dir}/`ls *.cam2.h1.????-??-??-?????.nc`
+    cp ${Model_output} ${Model_work_dir}/${Model_output_name}
+    is_file_exist=1
+  fi
+  Model_work_dir=${Model_work_dir_org}
+fi
+
+# looking for file from the model supporting path
+if [ "${is_file_exist}" == "0" ]; then
+  Model_output=${scripthome}/${supported_models}/${Model}/Model_template.nc
+  if [ -f ${Model_output} ]; then
+    cp ${Model_output} ${Model_work_dir}/${Model_output_name}
+    is_file_exist=1
+  fi
+  
+fi
+# if no data was found ...
+if [ "${is_file_exist}" == "0" ]; then
+  echo "Can't find any initial output data and nothing should go further."
+  exit 777
+fi
+
+###############################################################################
+echo ${JobStartTime}
+echo `date`" || "${JobName}
+echo ${Line_Break}
+
+

@@ -1,0 +1,289 @@
+diff -r SourceMods_CESM112_org/src.cam/cam_comp.F90 SourceMods_CESM112_m/src.cam/cam_comp.F90
+268a269,271
+> #if ( defined OFFLINE_DYN )
+>    use metdata,          only: get_met_fields
+> #endif
+275a279,289
+> 
+> #if ( defined OFFLINE_DYN )
+>    !
+>    ! if offline mode set SHFLX QFLX TAUX TAUY for vert diffusion
+>    !
+> !   call get_met_fields( cam_in )
+>   if (masterproc) then
+>     write(*,*)'We do not use SHFLX QFLX TAUX TAUY from met data in this version'
+>   endif
+> #endif
+> 
+diff -r SourceMods_CESM112_org/src.cam/cam_diagnostics.F90 SourceMods_CESM112_m/src.cam/cam_diagnostics.F90
+241a242
+>    call addfld ('U500    ','m/s     ',1,    'A','Zonal wind at 500 mbar pressure surface',phys_decomp)
+245d245
+<    call addfld ('U500    ','m/s     ',1,    'A','Zonal wind at 500 mbar pressure surface',phys_decomp) !added for le +jek
+246a247
+>    call addfld ('V500    ','m/s     ',1,    'A','Meridional wind at 500 mbar pressure surface',phys_decomp)
+249d249
+<    call addfld ('V500    ','m/s     ',1,    'A','Meridional wind at 500 mbar pressure surface',phys_decomp) !added for le +jek
+1014a1015,1018
+>     if (hist_fld_active('U500')) then
+>        call vertinterp(ncol, pcols, pver, state%pmid, 50000._r8, state%u, p_surf)
+>        call outfld('U500    ', p_surf, pcols, lchnk )
+>     end if
+1023,1026d1026
+<     if (hist_fld_active('U500')) then  !!+jek added for le
+<        call vertinterp(ncol, pcols, pver, state%pmid, 50000._r8, state%u, p_surf)
+<        call outfld('U500    ', p_surf, pcols, lchnk )
+<     end if
+1034a1035,1038
+>     if (hist_fld_active('V500')) then
+>        call vertinterp(ncol, pcols, pver, state%pmid, 50000._r8, state%v, p_surf)
+>        call outfld('V500    ', p_surf, pcols, lchnk )
+>     end if
+1042,1045d1045
+<     end if
+<     if (hist_fld_active('V500')) then !!+jek added for le
+<        call vertinterp(ncol, pcols, pver, state%pmid, 50000._r8, state%v, p_surf)
+<        call outfld('V500    ', p_surf, pcols, lchnk )
+diff -r SourceMods_CESM112_org/src.cam/cd_core.F90 SourceMods_CESM112_m/src.cam/cd_core.F90
+42c42,43
+<    use metdata,       only : get_met_fields, met_winds_on_walls
+---
+>    use metdata,       only : get_met_fields, met_winds_on_walls, &
+>                              met_rlx, zeta_rlx
+44d44
+<    use metdata,       only : met_rlx
+679c679
+<                                 reset_winds, met_rlx(k)  )
+---
+>                                 reset_winds, met_rlx(k)*zeta_rlx  )
+diff -r SourceMods_CESM112_org/src.cam/check_energy.F90 SourceMods_CESM112_m/src.cam/check_energy.F90
+498c498
+<     heat_glob = 0._r8
+---
+> !MS!    heat_glob = 0._r8
+diff -r SourceMods_CESM112_org/src.cam/dyn_comp.F90 SourceMods_CESM112_m/src.cam/dyn_comp.F90
+854c854
+<    use metdata,     only: get_met_fields, advance_met, get_us_vs, met_fix_mass, met_rlx
+---
+>    use metdata,     only: get_met_fields, advance_met, get_us_vs, met_fix_mass, met_rlx, zeta_rlx
+1556,1557c1556,1557
+<                     u(i,j,k)    = (1._r8-met_rlx(k))*u_tmp(i,j,k) + met_rlx(k)*u(i,j,k)
+<                     v(i,j,k)    = (1._r8-met_rlx(k))*v_tmp(i,j,k) + met_rlx(k)*v(i,j,k)
+---
+>                     u(i,j,k)    = (1._r8-met_rlx(k)*zeta_rlx)*u_tmp(i,j,k) + met_rlx(k)*zeta_rlx*u(i,j,k)
+>                     v(i,j,k)    = (1._r8-met_rlx(k)*zeta_rlx)*v_tmp(i,j,k) + met_rlx(k)*zeta_rlx*v(i,j,k)
+1670,1671c1670,1671
+<                     u(i,j,k)    = (1._r8-met_rlx(k))*uxy(i,j,k) + met_rlx(k)*u(i,j,k)
+<                     v(i,j,k)    = (1._r8-met_rlx(k))*vxy(i,j,k) + met_rlx(k)*v(i,j,k)
+---
+>                     u(i,j,k)    = (1._r8-met_rlx(k)*zeta_rlx)*uxy(i,j,k) + met_rlx(k)*zeta_rlx*u(i,j,k)
+>                     v(i,j,k)    = (1._r8-met_rlx(k)*zeta_rlx)*vxy(i,j,k) + met_rlx(k)*zeta_rlx*v(i,j,k)
+diff -r SourceMods_CESM112_org/src.cam/metdata.F90 SourceMods_CESM112_m/src.cam/metdata.F90
+11a12,13
+> ! 
+> ! 05.10.20 Add a namelist parameter for Boundary layer and pause/resume control. by Mao-Lin Shen
+54a57,58
+>   public :: zeta_rlx ! mscheck: for snapshot nudging control
+> 
+151a156
+>   integer :: nudging_ss_counter = 100 !ms! for snapshot nudging
+172a178
+>   real(r8) :: zeta_rlx = 0.0_r8 ! mscheck: snapsoot nudging control
+192a199
+>   real(r8) :: met_BLC_factor(1:20) = -1._r8
+228a236
+>         met_BLC_factor, &
+259a268
+>    call mpibcast (met_BLC_factor     ,20 ,mpilog,0,mpicom )
+272a282
+>        write(iulog,*)'Meteorological relaxation PBL control sets to be: ', met_BLC_factor
+447c457,460
+<    integer :: i,j,k, idim
+---
+>    integer :: i,j,k, idim, isleep
+>    !MS: add for nudging control
+>    LOGICAL       :: ll_exist
+>    
+453a467,479
+>     nudging_ss_counter = nudging_ss_counter + 1 !ms! for snapshot nudging
+>     if ( nudging_ss_counter == 1 ) then
+>       zeta_rlx = 1.0_r8
+>     else
+>       zeta_rlx = 0.0_r8
+>     end if
+> 
+>     if (masterproc) then
+>       write(iulog,*)'mscheck: time ', curr_mod_time, datatimep, zeta_rlx, nudging_ss_counter
+>       if ( zeta_rlx > 0 ) then
+>         write(iulog,*) 'mscheck: metdata_in: -----------------------------'
+>       end if
+>     end if
+457a484,488
+> 
+>       if (masterproc) then
+>         write(iulog,*)'msc:met567', curr_mod_time, datatimep, next_mod_time, datatimepn
+>       end if
+> 
+459a491,494
+>     if ( curr_mod_time == datatimep ) then
+>       nudging_ss_counter = 0
+>     end if
+> 
+461c496,524
+<        call read_next_metdata(grid)
+---
+>       ! pause for changing flag
+>       i = 22222; ll_exist = .false.
+>       isleep = 0
+>       if (masterproc) then
+>         write(iulog,*)'mscheck: waiting for nudging data. '
+>       end if
+> 
+>       do while ( ll_exist == .false. )
+>         call sleep(1)
+>         isleep = isleep + 1
+>         inquire(file = "is_DI_data_ready", exist = ll_exist)
+>         !ll_exist = .true. !! for debug only ...........
+>       enddo
+>       if (masterproc) then
+>         write(iulog,*)'mscheck: sleep ', isleep,'s before data is ready.'
+>       end if
+> 
+>       call pio_closefile( curr_fileid )
+>       deallocate( curr_data_times )
+>       allocate( curr_data_times( size( next_data_times ) ) )
+>       call open_met_datafile( curr_filename, curr_fileid, curr_data_times, met_data_path)
+> 
+>       call read_next_metdata(grid)
+> 
+>       if (masterproc) then
+>         open (unit = i, file = "is_DI_data_ready")
+>         close (unit = i, status = 'delete' )
+>       end if
+> 
+510,513c573,576
+<           cam_in(c)%wsx(:ncol)     = (1._r8-met_rlx(pver)) * cam_in(c)%wsx(:ncol)    + met_rlx(pver) * met_taux(:ncol,c)
+<           cam_in(c)%wsy(:ncol)     = (1._r8-met_rlx(pver)) * cam_in(c)%wsy(:ncol)    + met_rlx(pver) * met_tauy(:ncol,c)
+<           cam_in(c)%shf(:ncol)     = (1._r8-met_rlx(pver)) * cam_in(c)%shf(:ncol)    + met_rlx(pver) * (met_shflx(:ncol,c) * met_shflx_factor)
+<           cam_in(c)%cflx(:ncol,1)  = (1._r8-met_rlx(pver)) * cam_in(c)%cflx(:ncol,1) + met_rlx(pver) * (met_qflx(:ncol,c)  * met_qflx_factor)
+---
+>           cam_in(c)%wsx(:ncol)     = (1._r8-met_rlx(pver)*zeta_rlx) * cam_in(c)%wsx(:ncol)    + met_rlx(pver)*zeta_rlx * met_taux(:ncol,c)
+>           cam_in(c)%wsy(:ncol)     = (1._r8-met_rlx(pver)*zeta_rlx) * cam_in(c)%wsy(:ncol)    + met_rlx(pver)*zeta_rlx * met_tauy(:ncol,c)
+>           cam_in(c)%shf(:ncol)     = (1._r8-met_rlx(pver)*zeta_rlx) * cam_in(c)%shf(:ncol)    + met_rlx(pver)*zeta_rlx * (met_shflx(:ncol,c) * met_shflx_factor)
+>           cam_in(c)%cflx(:ncol,1)  = (1._r8-met_rlx(pver)*zeta_rlx) * cam_in(c)%cflx(:ncol,1) + met_rlx(pver)*zeta_rlx * (met_qflx(:ncol,c)  * met_qflx_factor)
+660c723
+<              state(c)%t(i,k) = (1._r8-met_rlx(k))*state(c)%t(i,k) + met_rlx(k)*met_t(i,k,c)
+---
+>              state(c)%t(i,k) = (1._r8-met_rlx(k)*zeta_rlx)*state(c)%t(i,k) + met_rlx(k)*zeta_rlx*met_t(i,k,c)
+1497a1561,1572
+>     if (masterproc) then
+>       if (recnos(1) < 2) then
+>         write(iulog,*)'msc:ti:12',curr_mod_time,'==:',fids(1)%fh,fids(2)%fh
+>         write(iulog,*)'msc:ti:1:',datatimem,met_ti(1)%data(1,26,:)
+>         write(iulog,*)'msc:ti:2:',datatimep,met_ti(2)%data(1,26,:)
+>       else
+>         write(iulog,*)'msc:ti:21',curr_mod_time,'==:',fids(1)%fh,fids(2)%fh
+>         write(iulog,*)'msc:ti:1:',datatimem,met_ti(1)%data(1,26,:)
+>         write(iulog,*)'msc:ti:2:',datatimep,met_ti(2)%data(1,26,:)
+>       endif
+>     endif
+> 
+1543a1619,1627
+>     if (masterproc) then
+>       write(iulog,*)'msc:met1716',curr_mod_time,fact1, fact2
+>     endif
+> 
+> !!MS! for snapshot nudging: force nudging to the latest one
+>     fact1 = D1_0
+>     fact2 = D0_0
+> !!ms!
+> 
+1595a1680,1690
+>     if (masterproc) then
+>       write(iulog,*)'msc:met1716',curr_mod_time,fact1, fact2, nfact1, nfact2
+>     endif
+> 
+> !!MS! for snapshot nudging: force nudging to the latest one
+>     fact1 = D1_0
+>     fact2 = D0_0
+>     nfact2 = D1_0
+>     nfact1 = D0_0
+> !!ms!
+> 
+1641a1737,1741
+>     if (masterproc) then
+>         write(iulog,*)'msc:t:12',curr_mod_time,'===================:'
+>         write(iulog,*)'msc:t:', zeta_rlx, datatimep,met_t(1,26,:)
+>     endif
+> 
+1901a2002,2013
+> 
+>     do k = plev-9,plev
+> if (masterproc) then
+>       write(iulog,*) '  mlschk: k = ',plev-k+1,k, plev, met_BLC_factor(plev-k+1)
+> endif
+>       if (met_BLC_factor(plev-k+1) > -1e-8_r8) then
+>         met_rlx(k) = met_BLC_factor(plev-k+1)*met_max_rlx
+> if (masterproc) then
+>         write(iulog,fmt=996) 'mlschk: ', met_rlx(k)
+> endif
+>       endif
+>     enddo
+diff -r SourceMods_CESM112_org/src.cam/mo_drydep.F90 SourceMods_CESM112_m/src.cam/mo_drydep.F90
+274c274
+<     call get_met_fields(lndfrac, met_ocnfrac, met_icefrac, lchnk, ncol)
+---
+> !MS    call get_met_fields(lndfrac, met_ocnfrac, met_icefrac, lchnk, ncol)
+292c292,293
+<                          ocnfrc=met_ocnfrac,icefrc=met_icefrac, beglandtype=7, endlandtype=8 )
+---
+>                    !MS      ocnfrc=met_ocnfrac,icefrc=met_icefrac, beglandtype=7, endlandtype=8 )
+>                          ocnfrc=ocnfrac,icefrc=icefrac, beglandtype=7, endlandtype=8 )
+diff -r SourceMods_CESM112_org/src.cam/pfixer.F90 SourceMods_CESM112_m/src.cam/pfixer.F90
+19c19
+<   use metdata,       only: met_rlx
+---
+>   use metdata,       only: met_rlx, zeta_rlx
+561c561
+<           mfx(:,j,k) = mfx(:,j,k) +  met_rlx(k) * xcolmass_fix(:,j) * hybd(k)
+---
+>           mfx(:,j,k) = mfx(:,j,k) +  met_rlx(k)*zeta_rlx * xcolmass_fix(:,j) * hybd(k)
+564c564
+<           mfy(:,j,k) = mfy(:,j,k) +  met_rlx(k) * mmf(j) * hybd(k)
+---
+>           mfy(:,j,k) = mfy(:,j,k) +  met_rlx(k)*zeta_rlx * mmf(j) * hybd(k)
+567c567
+<           mfy(:,jm,k) = mfy(:,jm,k) +  met_rlx(k) * mmf(jm) * hybd(k)
+---
+>           mfy(:,jm,k) = mfy(:,jm,k) +  met_rlx(k)*zeta_rlx * mmf(jm) * hybd(k)
+diff -r SourceMods_CESM112_org/src.cam/radheat.F90 SourceMods_CESM112_m/src.cam/radheat.F90
+132,137c132,138
+<    ptend%s(:ncol,:) = 0._r8
+<    do k = 1,pver
+<      if (met_rlx(k) < 1._r8 .or. met_srf_feedback) then
+<        ptend%s(:ncol,k) = (qrs(:ncol,k) + qrl(:ncol,k))
+<      endif
+<    enddo 
+---
+> !MS   ptend%s(:ncol,:) = 0._r8
+> !MS   do k = 1,pver
+> !MS     if (met_rlx(k) < 1._r8 .or. met_srf_feedback) then
+> !MS       ptend%s(:ncol,k) = (qrs(:ncol,k) + qrl(:ncol,k))
+> !MS     endif
+> !MS   enddo 
+>    ptend%s(:ncol,:) = (qrs(:ncol,:) + qrl(:ncol,:))
+diff -r SourceMods_CESM112_org/src.cam/rrtmg_lw_rtrnmc.f90 SourceMods_CESM112_m/src.cam/rrtmg_lw_rtrnmc.f90
+229c229,230
+< 
+---
+> !haibui: modify according to CAM6
+> !https://bb.cgd.ucar.edu/cesm/threads/segmentation-fault-in-xtpv-of-tp_core-f90.5206/
+234a236,237
+>            if (secdiff(ibnd) .gt. 1.80_r8) secdiff(ibnd) = 1.80_r8
+>            if (secdiff(ibnd) .lt. 1.50_r8) secdiff(ibnd) = 1.50_r8
+237,238c240,241
+<       if (pwvcm.lt.1.0) secdiff(6) = 1.80_r8
+<       if (pwvcm.gt.7.1) secdiff(7) = 1.50_r8
+---
+>       !if (pwvcm.lt.1.0) secdiff(6) = 1.80_r8
+>       !if (pwvcm.gt.7.1) secdiff(7) = 1.50_r8

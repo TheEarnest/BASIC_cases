@@ -1,0 +1,48 @@
+#! /bin/bash
+###############################################################################
+. ${fhome}/func_debug_Setting_$DebugLev
+JobStartTime=`date`; echo ${Line_Break}; echo ${Line_Break}
+JobName=func_vi_Model2Common 
+#tempPrefix=t_${JobName}
+echo "Starting "${JobName}" ...... "
+###############################################################################
+. ${fhome}/func_debug_Setting_${DebugLev}
+SourceData=${Model_output}
+file2check=${SourceData}
+. ${fhome}/func_WaitingFile
+. ${fhome}/func_FileIsWriting
+Model_1step_template=`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "one timestep ingestion data template"`
+BaseSize=`du ${SupportData}/${Model_1step_template} | awk -F " " '{print $1}'`
+BaseSize87=`echo "scale=0;(${BaseSize}*0.87)/1.0"| bc -l `
+#. ${fhome}/func_CheckFileSize
+
+SPN_dataDir=${DIData}/${Model}
+BCK_dataDir=${DataIngestionBCK}/${Model}/${yy}
+[ ! -d ${SPN_dataDir}/work ] && mkdir -p ${SPN_dataDir}/work
+cd ${SPN_dataDir}/work
+[ ! -z ${SPN_dataDir} ] && rm -rf ${SPN_dataDir}/work/*
+
+
+SDname=${t_prefix}_SourceData_${ss}.nc
+TDname=${t_prefix}_TargetData_${ss}.nc
+
+is_filesize_correct="False"
+while [ "${is_filesize_correct}" == "False" ]; do
+  ncks -O -v PS,Q,T,U,V,date,datesec ${SourceData} ${TDname}
+  cp -f ${TDname} ${SDname}
+  filesize=`du ${TDname} | awk -F " " '{print $1}'`
+  if [ ${filesize} -gt ${BaseSize87} ]; then
+    is_filesize_correct="True"
+  else
+    echo "${Model}: file size check fail ... ${SourceData} ..."
+    rm ${TDname}
+    sleep ${sleepS}s
+  fi
+done
+#cp -f ${TDname} ${data_vi}
+${CDO} -chname,PS,sp,T,t,U,u,V,v,Q,q ${TDname} ${data_vi}
+cp -f ${TDname} ${BCK_dataDir}/data_${Model}_vi_${yy}-${mm}-${dd}-${ss} & 
+###############################################################################
+echo ${JobStartTime}
+echo `date`" || "${JobName}
+echo ${Line_Break}

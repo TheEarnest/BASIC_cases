@@ -1,0 +1,882 @@
+11a12,13
+> ! 
+> ! 05.10.20 Add a namelist parameter for Boundary layer and pause/resume control. by Mao-Lin Shen
+13d14
+< ! 14.11.19 Add a namelist parameter for Boundary layer control. by Mao-Lin Shen 
+42,54c43,58
+<   public metdata_dyn_init  ! subroutine to open files, allocate blocked arrays, etc
+<   public metdata_phys_init ! subroutine to allocate chunked arrays
+<   public advance_met       ! subroutine to read more data and interpolate
+<   public get_met_fields    ! interface to set meteorology fields
+<   public get_us_vs       
+<   public offline_met_defaultopts
+<   public offline_met_setopts
+<   public met_winds_on_walls
+<   public write_met_restart
+<   public read_met_restart
+<   public met_rlx
+<   public fix_mass
+<   public zeta_rlx ! mscheck: for snapshot nudging control
+---
+>   public :: metdata_dyn_init  ! subroutine to open files, allocate blocked arrays, etc
+>   public :: metdata_phys_init ! subroutine to allocate chunked arrays
+>   public :: advance_met       ! subroutine to read more data and interpolate
+>   public :: get_met_fields    ! interface to set meteorology fields
+>   public :: get_met_srf1
+>   public :: get_met_srf2
+>   public :: get_us_vs       
+>   public :: metdata_readnl
+>   public :: met_winds_on_walls
+>   public :: write_met_restart
+>   public :: read_met_restart
+>   public :: met_rlx
+>   public :: met_fix_mass
+>   public :: met_srf_feedback
+>   public :: zeta_rlx ! mscheck: for snapshot nudging control
+> 
+77d80
+<      Module Procedure get_srf_flds
+85,86c88,89
+<   logical :: cell_wall_winds = .false.  ! true => met data winds are cell centered
+<   logical :: remove_met_file = .false.  ! delete metdata file when finished with it
+---
+>   logical :: met_cell_wall_winds = .false.  ! true => met data winds are cell centered
+>   logical :: met_remove_file = .false.  ! delete metdata file when finished with it
+88,91c91,99
+<   character(len=16) :: shflx_name = 'SHFLX'
+<   character(len=16) :: qflx_name = 'QFLX'
+<   real(r8) :: shflx_factor = 1._r8
+<   real(r8) :: qflx_factor  = 1._r8
+---
+>   character(len=16) :: met_shflx_name = 'SHFLX'
+>   character(len=16) :: met_qflx_name = 'QFLX'
+>   real(r8) :: met_snowh_factor = 1._r8
+>   real(r8) :: met_shflx_factor = 1._r8
+>   real(r8) :: met_qflx_factor  = 1._r8
+>   logical  :: met_srf_feedback = .true.
+>   logical  :: met_srf_nudge_flux = .true. ! wsx, wsy, shf, and cflx nudged rather than forced.
+>                                           ! This is done primarily to prevent unrealistic
+>                                           ! surface temperatures.
+127a136
+>   real(r8), allocatable :: met_snowh(:,:) ! interpolated snow height
+144a154
+>   type(input2d) :: met_snowhi(2)
+146c156
+<   integer :: nudging_ss_counter = 100 !ms! for snapshot nudging 
+---
+>   integer :: nudging_ss_counter = 100 !ms! for snapshot nudging
+160,162c170,172
+<   character(len=256) :: curr_filename, next_filename, metdata_file
+<   character(len=256) :: filenames_list = ''
+<   character(len=256) :: met_datapath = ''
+---
+>   character(len=256) :: curr_filename, next_filename, met_data_file
+>   character(len=256) :: met_filenames_list = ''
+>   character(len=256) :: met_data_path = ''
+170d179
+< 
+184d192
+< 
+188,191c196,199
+<   real(r8) :: rlx_top_km = 60._r8
+<   real(r8) :: rlx_bot_km = 50._r8
+<   real(r8) :: max_rlx = 1._r8
+<   real(r8) :: BLC_factor(1:10) = -1._r8
+---
+>   real(r8) :: met_rlx_top = 60._r8
+>   real(r8) :: met_rlx_bot = 50._r8
+>   real(r8) :: met_max_rlx = 1._r8
+>   real(r8) :: met_BLC_factor(1:10) = -1._r8
+193c201
+<   logical  :: fix_mass = .true.
+---
+>   logical  :: met_fix_mass = .true.
+198,351c206,209
+< !--------------------------------------------------------------------------
+< ! Get the default runtime options
+< !--------------------------------------------------------------------------
+<   subroutine offline_met_defaultopts( met_data_file_out, &
+<                                       met_data_path_out, & 
+<                                       met_remove_file_out, & 
+<                                       met_cell_wall_winds_out, &
+<                                       met_filenames_list_out, &
+<                                       met_rlx_top_km_out, &
+<                                       met_rlx_bot_km_out, &
+<                                       met_max_rlx_out, &
+<                                       met_BLC_factor_out, &
+<                                       met_fix_mass_out, &
+<                                       met_shflx_name_out, &
+<                                       met_shflx_factor_out, &
+<                                       met_qflx_name_out, &
+<                                       met_qflx_factor_out  )
+< 
+<     implicit none
+< 
+<     character(len=256), intent(out), optional :: met_data_file_out
+<     character(len=256), intent(out), optional :: met_data_path_out
+<     logical,            intent(out), optional :: met_remove_file_out
+<     logical,            intent(out), optional :: met_cell_wall_winds_out
+<     character(len=256), intent(out), optional :: met_filenames_list_out
+<     real(r8),           intent(out), optional :: met_rlx_top_km_out
+<     real(r8),           intent(out), optional :: met_rlx_bot_km_out
+<     real(r8),           intent(out), optional :: met_max_rlx_out
+<     real(r8),           intent(out), optional :: met_BLC_factor_out(10)
+<     logical ,           intent(out), optional :: met_fix_mass_out
+<     character(len=16),  intent(out), optional :: met_shflx_name_out
+<     real(r8),           intent(out), optional :: met_shflx_factor_out
+<     character(len=16),  intent(out), optional :: met_qflx_name_out
+<     real(r8),           intent(out), optional :: met_qflx_factor_out
+< 
+<     if ( present( met_data_file_out ) ) then
+<        met_data_file_out = metdata_file
+<     endif
+< 
+<     if ( present( met_data_path_out ) ) then
+<        met_data_path_out = met_datapath
+<     endif
+< 
+<     if ( present( met_remove_file_out ) ) then
+<        met_remove_file_out = remove_met_file
+<     endif
+< 
+<     if ( present( met_cell_wall_winds_out ) ) then
+<        met_cell_wall_winds_out =  cell_wall_winds
+<     endif
+< 
+<     if ( present( met_filenames_list_out ) ) then
+<        met_filenames_list_out =  filenames_list
+<     endif
+< 
+<     if ( present( met_rlx_top_km_out ) ) then
+<        met_rlx_top_km_out = rlx_top_km
+<     endif
+< 
+<     if ( present( met_rlx_bot_km_out ) ) then
+<        met_rlx_bot_km_out = rlx_bot_km
+<     endif
+< 
+<     if ( present( met_max_rlx_out ) ) then
+<        met_max_rlx_out = max_rlx
+<     endif
+< 
+<     if ( present( met_BLC_factor_out ) ) then
+<        met_BLC_factor_out = BLC_factor
+<     endif
+< 
+<     if ( present( met_fix_mass_out ) ) then
+<        met_fix_mass_out = fix_mass
+<     endif
+< 
+<     if ( present( met_shflx_name_out ) ) then
+<        met_shflx_name_out = shflx_name
+<     endif
+<     if ( present( met_shflx_factor_out ) ) then
+<        met_shflx_factor_out = shflx_factor
+<     endif
+<     if ( present( met_qflx_name_out ) ) then
+<        met_qflx_name_out = qflx_name
+<     endif
+<     if ( present( met_qflx_factor_out ) ) then
+<        met_qflx_factor_out = qflx_factor
+<     endif
+< 
+<   end subroutine offline_met_defaultopts
+< 
+< !--------------------------------------------------------------------------
+< ! Set runtime options
+< !--------------------------------------------------------------------------
+<   subroutine offline_met_setopts( met_data_file_in, &
+<                                   met_data_path_in, &
+<                                   met_remove_file_in, &
+<                                   met_cell_wall_winds_in, &
+<                                   met_filenames_list_in, &
+<                                   met_rlx_top_km_in, &
+<                                   met_rlx_bot_km_in, &
+<                                   met_max_rlx_in, &
+< !!!#if ( defined _OFFLINE_DYN_BLC )
+<                                   met_BLC_factor_in, &
+< !!!#endif /* _OFFLINE_DYN_BLC */
+<                                   met_fix_mass_in, &
+<                                   met_shflx_name_in, &
+<                                   met_shflx_factor_in, &
+<                                   met_qflx_name_in, &
+<                                   met_qflx_factor_in  )
+< 
+<     implicit none
+< 
+<     character(len=256), intent(in), optional :: met_data_file_in
+<     character(len=256), intent(in), optional :: met_data_path_in
+<     logical,            intent(in), optional :: met_remove_file_in
+<     logical,            intent(in), optional :: met_cell_wall_winds_in
+<     character(len=256), intent(in), optional :: met_filenames_list_in
+<     real(r8),           intent(in), optional :: met_rlx_top_km_in
+<     real(r8),           intent(in), optional :: met_rlx_bot_km_in
+<     real(r8),           intent(in), optional :: met_max_rlx_in
+<     real(r8),           intent(in), optional :: met_BLC_factor_in(10)
+<     logical ,           intent(in), optional :: met_fix_mass_in
+<     character(len=16),  intent(in), optional :: met_shflx_name_in
+<     real(r8),           intent(in), optional :: met_shflx_factor_in
+<     character(len=16),  intent(in), optional :: met_qflx_name_in
+<     real(r8),           intent(in), optional :: met_qflx_factor_in
+< 
+<     if ( present( met_data_file_in ) ) then
+<        metdata_file = met_data_file_in 
+<     endif
+< 
+<     if ( present( met_data_path_in ) ) then
+<        met_datapath = met_data_path_in
+<     endif
+< 
+<     if ( present( met_remove_file_in ) ) then
+<        remove_met_file = met_remove_file_in
+<     endif
+< 
+<     if ( present( met_cell_wall_winds_in ) ) then
+<        cell_wall_winds = met_cell_wall_winds_in  
+<     endif
+< 
+<     if ( present( met_filenames_list_in ) ) then
+<        filenames_list = met_filenames_list_in 
+<     endif
+< 
+<     if ( present( met_rlx_top_km_in ) ) then
+<        rlx_top_km = met_rlx_top_km_in
+<     endif
+< 
+<     if ( present( met_rlx_bot_km_in ) ) then
+<        rlx_bot_km = met_rlx_bot_km_in
+<     endif
+---
+> !-------------------------------------------------------------------------
+> ! meteorology data options
+> !-------------------------------------------------------------------------
+>   subroutine metdata_readnl(nlfile)
+353,355c211,253
+<     if ( present( met_max_rlx_in ) ) then
+<        max_rlx = met_max_rlx_in
+<     endif
+---
+>    use namelist_utils,  only: find_group_name
+>    use units,           only: getunit, freeunit
+>    use mpishorthand
+> 
+>    character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
+> 
+>    ! Local variables
+>    integer :: unitn, ierr
+>    character(len=*), parameter :: subname = 'metdata_readnl'
+> 
+>    namelist /metdata_nl/ &
+>         met_data_file, &
+>         met_data_path, & 
+>         met_remove_file, & 
+>         met_cell_wall_winds, &
+>         met_filenames_list, &
+>         met_rlx_top, &
+>         met_rlx_bot, &
+>         met_max_rlx, &
+>         met_fix_mass, &
+>         met_shflx_name, &
+>         met_shflx_factor, &
+>         met_snowh_factor, &
+>         met_qflx_name, &
+>         met_qflx_factor, &
+>         met_BLC_factor, &
+>         met_srf_feedback, &
+>         met_srf_nudge_flux
+> 
+>    ! Read namelist
+>    if (masterproc) then
+>       unitn = getunit()
+>       open( unitn, file=trim(nlfile), status='old' )
+>       call find_group_name(unitn, 'metdata_nl', status=ierr)
+>       if (ierr == 0) then
+>          read(unitn, metdata_nl, iostat=ierr)
+>          if (ierr /= 0) then
+>             call endrun(subname // ':: ERROR reading namelist')
+>          end if
+>       end if
+>       close(unitn)
+>       call freeunit(unitn)
+>    end if
+357,359c255
+<     if ( present( met_BLC_factor_in ) ) then
+<        BLC_factor = met_BLC_factor_in
+<     endif
+---
+> #if ( defined SPMD )
+361,363c257
+<     if ( present( met_fix_mass_in ) ) then
+<        fix_mass = met_fix_mass_in
+<     endif
+---
+>    ! Broadcast namelist variables
+365,376c259,275
+<     if ( present( met_shflx_name_in ) ) then
+<        shflx_name = met_shflx_name_in
+<     endif
+<     if ( present( met_shflx_factor_in ) ) then
+<        shflx_factor = met_shflx_factor_in
+<     endif
+<     if ( present( met_qflx_name_in ) ) then
+<        qflx_name = met_qflx_name_in
+<     endif
+<     if ( present( met_qflx_factor_in ) ) then
+<        qflx_factor = met_qflx_factor_in
+<     endif
+---
+>    call mpibcast (met_data_file  ,len(met_data_file) ,mpichar,0,mpicom)
+>    call mpibcast (met_data_path  ,len(met_data_path) ,mpichar,0,mpicom)
+>    call mpibcast (met_remove_file    ,1 ,mpilog, 0, mpicom )
+>    call mpibcast (met_cell_wall_winds,1 ,mpilog, 0, mpicom )
+>    call mpibcast (met_filenames_list ,len(met_filenames_list),mpichar,0,mpicom)
+>    call mpibcast (met_rlx_top,        1 ,mpir8,  0, mpicom )
+>    call mpibcast (met_rlx_bot,        1 ,mpir8,  0, mpicom )
+>    call mpibcast (met_max_rlx,        1 ,mpir8,  0, mpicom )
+>    call mpibcast (met_fix_mass,       1 ,mpilog, 0, mpicom )
+>    call mpibcast (met_BLC_factor     ,1 ,mpilog,0,mpicom )
+>    call mpibcast (met_qflx_name      ,len(met_qflx_name),     mpichar,0,mpicom)
+>    call mpibcast (met_shflx_name     ,len(met_shflx_name),    mpichar,0,mpicom)
+>    call mpibcast (met_qflx_factor    ,1, mpir8,  0, mpicom )
+>    call mpibcast (met_shflx_factor   ,1, mpir8,  0, mpicom )
+>    call mpibcast (met_snowh_factor   ,1, mpir8,  0, mpicom )
+>    call mpibcast (met_srf_feedback   ,1 ,mpilog, 0, mpicom )
+> #endif
+378,391c277,292
+<     if (masterproc) then
+<        write(iulog,*)'Time-variant meteorological dataset (metdata_file) is: ', trim(metdata_file)
+<        write(iulog,*)'Meteorological data file will be removed (remove_met_file): ', remove_met_file
+<        write(iulog,*)'Meteorological winds are on cell walls (cell_wall_winds): ', cell_wall_winds
+<        write(iulog,*)'Meteorological file names list file: ', trim(filenames_list) 
+<        write(iulog,*)'Meteorological relaxation top is (km): ', rlx_top_km
+<        write(iulog,*)'Meteorological relaxation bottom is (km): ', rlx_bot_km
+<        write(iulog,*)'Meteorological maximum relaxation is : ',max_rlx
+<        write(iulog,*)'Meteorological relaxation over Boundary layer is : ', BLC_factor
+<        write(iulog,*)'Offline driver mass fixer is trurned on (fix_mass): ',fix_mass
+<        write(iulog,*)'Meteorological shflx field name : ', trim(shflx_name) 
+<        write(iulog,*)'Meteorological shflx multiplication factor : ', shflx_factor
+<        write(iulog,*)'Meteorological qflx field name : ', trim(qflx_name) 
+<        write(iulog,*)'Meteorological qflx multiplication factor : ', qflx_factor 
+---
+>    if (masterproc) then
+>        write(iulog,*)'Time-variant meteorological dataset (met_data_file) is: ', trim(met_data_file)
+>        write(iulog,*)'Meteorological data file will be removed (met_remove_file): ', met_remove_file
+>        write(iulog,*)'Meteorological winds are on cell walls (met_cell_wall_winds): ', met_cell_wall_winds
+>        write(iulog,*)'Meteorological file names list file: ', trim(met_filenames_list) 
+>        write(iulog,*)'Meteorological relaxation PBL control sets to be: ', met_BLC_factor
+>        write(iulog,*)'Meteorological relaxation top is (km): ', met_rlx_top
+>        write(iulog,*)'Meteorological relaxation bottom is (km): ', met_rlx_bot
+>        write(iulog,*)'Meteorological maximum relaxation is : ',met_max_rlx
+>        write(iulog,*)'Offline driver mass fixer is trurned on (met_fix_mass): ',met_fix_mass
+>        write(iulog,*)'Meteorological shflx field name : ', trim(met_shflx_name) 
+>        write(iulog,*)'Meteorological shflx multiplication factor : ', met_shflx_factor
+>        write(iulog,*)'Meteorological qflx field name : ', trim(met_qflx_name) 
+>        write(iulog,*)'Meteorological qflx multiplication factor : ', met_qflx_factor 
+>        write(iulog,*)'Meteorological snowh multiplication factor : ', met_snowh_factor
+>        write(iulog,*)'Meteorological allow srf models feedbacks : ', met_srf_feedback
+394c295
+<   end subroutine offline_met_setopts
+---
+>  end subroutine metdata_readnl
+424c325
+<        curr_filename = metdata_file
+---
+>        curr_filename = met_data_file
+431c332
+<     call open_met_datafile( grid, curr_filename, curr_fileid, curr_data_times, met_datapath, check_dims=.true.)
+---
+>     call open_met_datafile( curr_filename, curr_fileid, curr_data_times, met_data_path, check_dims=.true., grid=grid)
+434c335
+<          call open_met_datafile( grid, next_filename, next_fileid, next_data_times, met_datapath )
+---
+>          call open_met_datafile( next_filename, next_fileid, next_data_times, met_data_path )
+454c355
+<     if (cell_wall_winds) then
+---
+>     if (met_cell_wall_winds) then
+461c362
+<     if (.not. cell_wall_winds) then
+---
+>     if (.not. met_cell_wall_winds) then
+477a379
+>    use infnan,      only : nan
+488a391
+>    call addfld ('MET_SNOWH','    ',1,    'A','Meteorology snow height',phys_decomp)
+522a426,433
+>    met_ts(:,:) = nan
+>    
+>    if(.not.met_srf_feedback) then
+>       allocate( met_snowhi(nm)%data(pcols,begchunk:endchunk) )
+>       allocate( met_snowhi(np)%data(pcols,begchunk:endchunk) )
+>       allocate( met_snowh(pcols,begchunk:endchunk) )
+>       met_snowh(:,:) = nan
+>    endif
+525a437,443
+>    ! initialize phys surface fields...
+>    call get_model_time()
+>    call check_files()
+>    call read_phys_srf_flds()
+>    call interp_phys_srf_flds()
+>    datatimem = -1.e36_r8
+>    datatimep = -1.e36_r8
+541a460
+>    
+548,549c467,468
+<     nudging_ss_counter = nudging_ss_counter + 1 !ms! for snapshot nudging 
+<     if ( nudging_ss_counter == 1 ) then 
+---
+>     nudging_ss_counter = nudging_ss_counter + 1 !ms! for snapshot nudging
+>     if ( nudging_ss_counter == 1 ) then
+553c472
+<     end if 
+---
+>     end if
+558,559c477,478
+<         write(iulog,*) 'mscheck: metdata_in: -----------------------------' 
+<       end if 
+---
+>         write(iulog,*) 'mscheck: metdata_in: -----------------------------'
+>       end if
+564c483
+<        call check_files(grid)
+---
+>        call check_files()
+576d494
+< 
+595,613c513,516
+< !! MS: should (?) force re-read ps
+< !      call pio_closefile( curr_fileid )
+< !      call open_met_datafile( grid, curr_filename, curr_fileid, curr_data_times, met_datapath, check_dims=.true.)
+< 
+< 
+< ! MS: probably not really useful------TBD
+< !      if ( associated(next_data_times) ) then
+< !        if (curr_mod_time >= next_data_times(1)) then
+< 
+<           call pio_closefile( curr_fileid )
+<           deallocate( curr_data_times )
+<           allocate( curr_data_times( size( next_data_times ) ) )
+< 
+<           call open_met_datafile( grid, curr_filename, curr_fileid,curr_data_times, met_datapath )
+< 
+< 
+< !        end if
+< !      end if
+< !! ------------------------------------tbd
+---
+>       call pio_closefile( curr_fileid )
+>       deallocate( curr_data_times )
+>       allocate( curr_data_times( size( next_data_times ) ) )
+>       call open_met_datafile( curr_filename, curr_fileid, curr_data_times, met_data_path)
+615a519
+> 
+619,620c523
+<       end if 
+<     end if
+---
+>       end if
+621a525
+>     end if
+624c528
+<       call read_next_ps(grid)
+---
+>        call read_next_ps(grid)
+629d532
+<     !if ( zeta_rlx > 0.0_r8 ) then !MS! do only when zeta_rlx = 1.0_r8
+631d533
+<     !end if !ms! 
+635d536
+< 
+654a556
+> !   snowh
+656,657c558,559
+<   subroutine get_srf_flds( cam_in )
+<     use camsrfexch_types,    only: cam_in_t    
+---
+>   subroutine get_met_srf2( cam_in )
+>     use camsrfexch,          only: cam_in_t    
+659a562
+>     use shr_const_mod,       only: shr_const_stebol
+665c568
+<     integer :: c,ncol
+---
+>     integer :: c,ncol,i
+667,675c570,586
+<     call t_startf('MET__GET_SRF_FLDS')
+< 
+<     do c=begchunk,endchunk
+<        ncol = get_ncols_p(c)
+<        cam_in(c)%wsx(:ncol)    = met_taux(:ncol,c)
+<        cam_in(c)%wsy(:ncol)    = met_tauy(:ncol,c)
+<        cam_in(c)%shf(:ncol)    = met_shflx(:ncol,c)* shflx_factor
+<        cam_in(c)%cflx(:ncol,1) = met_qflx(:ncol,c) * qflx_factor
+<     end do                    ! Chunk loop
+---
+>     if (met_srf_nudge_flux) then
+>        do c=begchunk,endchunk
+>           ncol = get_ncols_p(c)
+>           cam_in(c)%wsx(:ncol)     = (1._r8-met_rlx(pver)*zeta_rlx) * cam_in(c)%wsx(:ncol)    + met_rlx(pver)*zeta_rlx * met_taux(:ncol,c)
+>           cam_in(c)%wsy(:ncol)     = (1._r8-met_rlx(pver)*zeta_rlx) * cam_in(c)%wsy(:ncol)    + met_rlx(pver)*zeta_rlx * met_tauy(:ncol,c)
+>           cam_in(c)%shf(:ncol)     = (1._r8-met_rlx(pver)*zeta_rlx) * cam_in(c)%shf(:ncol)    + met_rlx(pver)*zeta_rlx * (met_shflx(:ncol,c) * met_shflx_factor)
+>           cam_in(c)%cflx(:ncol,1)  = (1._r8-met_rlx(pver)*zeta_rlx) * cam_in(c)%cflx(:ncol,1) + met_rlx(pver)*zeta_rlx * (met_qflx(:ncol,c)  * met_qflx_factor)
+>        end do                    ! Chunk loop
+>     else
+>        do c=begchunk,endchunk
+>           ncol = get_ncols_p(c)
+>           cam_in(c)%wsx(:ncol)     = met_taux(:ncol,c)
+>           cam_in(c)%wsy(:ncol)     = met_tauy(:ncol,c)
+>           cam_in(c)%shf(:ncol)     = met_shflx(:ncol,c) * met_shflx_factor
+>           cam_in(c)%cflx(:ncol,1)  = met_qflx(:ncol,c)  * met_qflx_factor
+>        end do                    ! Chunk loop
+>     end if
+678,681c589,594
+<       write(iulog,*)'METDATA maxval(met_taux),minval(met_taux): ',maxval(met_taux),minval(met_taux)
+<       write(iulog,*)'METDATA maxval(met_tauy),minval(met_tauy): ',maxval(met_tauy),minval(met_tauy)
+<       write(iulog,*)'METDATA maxval(met_shflx),minval(met_shflx): ',maxval(met_shflx),minval(met_shflx)
+<       write(iulog,*)'METDATA maxval(met_qflx),minval(met_qflx): ',maxval(met_qflx),minval(met_qflx)
+---
+>        if (masterproc) then
+>           write(iulog,*)'METDATA   maxval(met_taux),minval(met_taux): ',maxval(met_taux),minval(met_taux)
+>           write(iulog,*)'METDATA   maxval(met_tauy),minval(met_tauy): ',maxval(met_tauy),minval(met_tauy)
+>           write(iulog,*)'METDATA maxval(met_shflx),minval(met_shflx): ',maxval(met_shflx),minval(met_shflx)
+>           write(iulog,*)'METDATA   maxval(met_qflx),minval(met_qflx): ',maxval(met_qflx),minval(met_qflx)
+>        endif
+691c604,614
+<     call t_stopf('MET__GET_SRF_FLDS')
+---
+>   end subroutine get_met_srf2
+> 
+> !-------------------------------------------------------------------
+> !-------------------------------------------------------------------
+>   subroutine get_met_srf1( cam_in )
+>     use camsrfexch,          only: cam_in_t    
+>     use phys_grid,           only: get_ncols_p
+>     use cam_history,         only: outfld
+>     use shr_const_mod,       only: shr_const_stebol
+> 
+>     implicit none
+693c616,644
+<   end subroutine get_srf_flds
+---
+>     type(cam_in_t), intent(inout), dimension(begchunk:endchunk) :: cam_in
+> 
+>     integer :: c,ncol,i
+>     
+>     if (met_srf_feedback) return
+>     if (.not.has_ts) then
+>        call endrun('The meteorolgy input must have TS to run with met_srf_feedback set to FALSE')
+>     endif
+> 
+>     do c=begchunk,endchunk
+>        ncol = get_ncols_p(c)
+>        cam_in(c)%ts(:ncol)     = met_ts(:ncol,c)
+>        do i = 1,ncol
+>           cam_in(c)%snowhland(i) = met_snowh(i,c)*cam_in(c)%landfrac(i) * met_snowh_factor
+>        enddo
+>     end do ! Chunk loop
+> 
+>     if (debug) then
+>        if (masterproc) then
+>           write(iulog,*)'METDATA       maxval(met_ts),minval(met_ts): ',maxval(met_ts),minval(met_ts)
+>           write(iulog,*)'METDATA maxval(met_snowh),minval(met_snowh): ',maxval(met_snowh),minval(met_snowh)
+>        endif
+>     endif
+> 
+>     do c = begchunk, endchunk
+>        call outfld('MET_SNOWH',cam_in(c)%snowhland, pcols   ,c   )
+>     enddo
+> 
+>   end subroutine get_met_srf1
+768,770d718
+< if (masterproc) then
+<   write(iulog,*) 'mscheck: begchunk,endchunk',begchunk, endchunk,pver,ncol 
+< end if
+776,781d723
+< if (masterproc) then
+<   if ( c == 70 .and. i == 1 .and. k == 1 ) then
+<   write(iulog,*) 'mscheck: metdata_in',state(c)%t(i,k),met_t(i,k,c), met_rlx(k)*zeta_rlx*met_t(i,k,c)
+<   end if
+< end if
+< 
+810a753
+>     if (masterproc) then
+813a757
+>     endif
+865a810
+>     if (masterproc) then
+870a816
+>     endif
+952a899
+>     if (masterproc) then
+957a905
+>     endif
+1055c1003
+<     met_winds_on_walls = cell_wall_winds
+---
+>     met_winds_on_walls = met_cell_wall_winds
+1117d1064
+< 
+1121,1122d1067
+< !!    write(*,*) 'curr_mod_time: ', curr_mod_time, next_mod_time, yr, mon, day, ncsec
+< 
+1129c1074
+<   subroutine check_files(grid)
+---
+>   subroutine check_files()
+1136,1137d1080
+<     type (T_FVDYCORE_GRID), intent(in) :: grid
+< 
+1149,1156d1091
+< 
+<           !ms!call pio_closefile( curr_fileid )
+<           !ms!deallocate( curr_data_times )
+<           !ms!allocate( curr_data_times( size( next_data_times ) ) )
+< 
+<           !ms!call open_met_datafile( grid, curr_filename, curr_fileid,
+<           !curr_data_times, met_datapath )
+< 
+1158c1093
+<           call open_met_datafile( grid, next_filename, next_fileid, next_data_times, met_datapath )
+---
+>           call open_met_datafile( next_filename, next_fileid, next_data_times, met_data_path )
+1160,1167d1094
+< !MS!    else ! not useful....=.=
+< !       ! open next file...
+< 
+< !       call pio_closefile( curr_fileid )
+< !       deallocate( curr_data_times )
+< !       allocate( curr_data_times( size( next_data_times ) ) )
+< 
+< !       call open_met_datafile( grid, curr_filename, curr_fileid,curr_data_times, met_datapath )
+1175c1102
+<           if (grid%iam == 0) then
+---
+>           if (masterproc) then
+1177c1104
+<              if( remove_met_file ) then
+---
+>              if( met_remove_file ) then
+1234c1161
+<     if ( len_trim(filenames_list) .eq. 0) then
+---
+>     if ( len_trim(met_filenames_list) .eq. 0) then
+1253,1254c1180
+<      if (masterproc) then
+<        ! open filenames_list
+---
+>        ! open met_filenames_list
+1256,1257c1182
+<        write(iulog,*) 'incr_flnm: open filenames_list : ',filenames_list 
+<      end if 
+---
+>        write(iulog,*) 'incr_flnm: open met_filenames_list : ',met_filenames_list 
+1259c1184
+<        open( unit=unitnumber, file=filenames_list, iostat=ios, status="OLD")
+---
+>        open( unit=unitnumber, file=met_filenames_list, iostat=ios, status="OLD")
+1261c1186
+<           call endrun('not able to open filenames_list file: '//filenames_list)
+---
+>           call endrun('not able to open met_filenames_list file: '//met_filenames_list)
+1267c1192
+<           call endrun('not able to increment file name from filenames_list file: '//filenames_list)
+---
+>           call endrun('not able to increment file name from met_filenames_list file: '//met_filenames_list)
+1272c1197
+<              call endrun('not able to increment file name from filenames_list file: '//filenames_list)
+---
+>              call endrun('not able to increment file name from met_filenames_list file: '//met_filenames_list)
+1278c1203
+<           call endrun('not able to increment file name from filenames_list file: '//filenames_list)
+---
+>           call endrun('not able to increment file name from met_filenames_list file: '//met_filenames_list)
+1286,1288c1211,1212
+<     if (masterproc) then
+<       write(iulog,*) 'incr_flnm: new filename = ',incr_filename
+<     end if 
+---
+>     write(iulog,*) 'incr_flnm: new filename = ',incr_filename
+> 
+1499,1502d1422
+<     if (masterproc) then
+<       write(iulog,*) 'mlschk: find_times ',datatimem, datatimep, curr_mod_time
+<     end if
+< 
+1512c1432
+<        if(cell_wall_winds) then
+---
+>        if(met_cell_wall_winds) then
+1523c1443
+<        if(cell_wall_winds) then
+---
+>        if(met_cell_wall_winds) then
+1568,1570d1487
+<     if (masterproc) then
+<       write(iulog,*)'mscheck: nudging timelevel:', recnos(1), recnos(2)
+<     end if   
+1587c1504
+<        if (cell_wall_winds) then 
+---
+>        if (met_cell_wall_winds) then 
+1625,1640c1542
+<        endif ! cell_wall_winds
+< 
+<     ! 2-D feilds
+< 
+<        call infld(shflx_name, fids(i), 'lon', 'lat',  1, pcols, begchunk, endchunk, &
+<             met_shflxi(i)%data, readvar, grid_map='PHYS',timelevel=recnos(i))
+<        call infld(Qflx_name, fids(i), 'lon', 'lat',  1, pcols, begchunk, endchunk, &
+<             met_qflxi(i)%data, readvar, grid_map='PHYS',timelevel=recnos(i))
+<        call infld('TAUX', fids(i), 'lon', 'lat',  1, pcols, begchunk, endchunk, &
+<             met_tauxi(i)%data, readvar, grid_map='PHYS',timelevel=recnos(i))
+<        call infld('TAUY', fids(i), 'lon', 'lat',  1, pcols, begchunk, endchunk, &
+<             met_tauyi(i)%data, readvar, grid_map='PHYS',timelevel=recnos(i))
+<        if (has_ts) then
+<           call infld('TS', fids(i), 'lon', 'lat',  1, pcols, begchunk, endchunk, &
+<                met_tsi(i)%data, readvar, grid_map='PHYS',timelevel=recnos(i))
+<        endif
+---
+>        endif ! met_cell_wall_winds
+1653a1556,1558
+>     ! 2-D feilds
+>     call read_phys_srf_flds( )
+> 
+1671a1577,1606
+> !------------------------------------------------------------------------------
+> !------------------------------------------------------------------------------
+>   subroutine read_phys_srf_flds( )
+>     use ncdio_atm,          only: infld
+> 
+>     integer :: i, recnos(2)
+>     type(file_desc_t) :: fids(2)
+>     logical :: readvar
+> 
+>     call find_times( recnos, fids, datatimem, datatimep, curr_mod_time )
+>     do i=1,2
+> 
+>        call infld(met_shflx_name, fids(i), 'lon', 'lat',  1, pcols, begchunk, endchunk, &
+>             met_shflxi(i)%data, readvar, grid_map='PHYS',timelevel=recnos(i))
+>        call infld(met_qflx_name, fids(i), 'lon', 'lat',  1, pcols, begchunk, endchunk, &
+>             met_qflxi(i)%data, readvar, grid_map='PHYS',timelevel=recnos(i))
+>        call infld('TAUX', fids(i), 'lon', 'lat',  1, pcols, begchunk, endchunk, &
+>             met_tauxi(i)%data, readvar, grid_map='PHYS',timelevel=recnos(i))
+>        call infld('TAUY', fids(i), 'lon', 'lat',  1, pcols, begchunk, endchunk, &
+>             met_tauyi(i)%data, readvar, grid_map='PHYS',timelevel=recnos(i))
+>        if ( .not.met_srf_feedback ) then
+>           call infld('SNOWH', fids(i), 'lon', 'lat',  1, pcols, begchunk, endchunk, &
+>                met_snowhi(i)%data, readvar, grid_map='PHYS',timelevel=recnos(i))
+>        endif
+>        if (has_ts) then
+>           call infld('TS', fids(i), 'lon', 'lat',  1, pcols, begchunk, endchunk, &
+>                met_tsi(i)%data, readvar, grid_map='PHYS',timelevel=recnos(i))
+>        endif
+>     enddo
+>   end subroutine read_phys_srf_flds
+1674a1610,1641
+>   subroutine interp_phys_srf_flds( )
+> 
+>     real(r4) :: fact1, fact2
+>     real(r8) :: deltat
+> 
+>     deltat = datatimep - datatimem
+>     fact1 = (datatimep - curr_mod_time)/deltat
+>     fact2 = D1_0-fact1
+> 
+>     if (masterproc) then
+>       write(iulog,*)'msc:met1716',curr_mod_time,fact1, fact2
+>     endif
+> 
+> !!MS! for snapshot nudging: force nudging to the latest one
+>     fact1 = D1_0
+>     fact2 = D0_0
+> !!ms!
+> 
+>     met_shflx(:,:) = fact1*met_shflxi(nm)%data(:,:) + fact2*met_shflxi(np)%data(:,:)
+>     met_qflx(:,:) = fact1*met_qflxi(nm)%data(:,:) + fact2*met_qflxi(np)%data(:,:)
+>     met_taux(:,:) = fact1*met_tauxi(nm)%data(:,:) + fact2*met_tauxi(np)%data(:,:)
+>     met_tauy(:,:) = fact1*met_tauyi(nm)%data(:,:) + fact2*met_tauyi(np)%data(:,:)
+>     if ( .not.met_srf_feedback ) then
+>        met_snowh(:,:) = fact1*met_snowhi(nm)%data(:,:) + fact2*met_snowhi(np)%data(:,:)
+>     endif
+>     if (has_ts) then
+>        met_ts(:,:) = fact1*met_tsi(nm)%data(:,:) + fact2*met_tsi(np)%data(:,:)
+>     endif
+> 
+>   end subroutine interp_phys_srf_flds
+> !------------------------------------------------------------------------------
+> !------------------------------------------------------------------------------
+1713,1714d1679
+< 
+< 
+1719c1684
+< !!MS! for snapshot nudging: force nudging to the latest one 
+---
+> !!MS! for snapshot nudging: force nudging to the latest one
+1734,1737c1699
+<     met_shflx(:,:) = fact1*met_shflxi(nm)%data(:,:) + fact2*met_shflxi(np)%data(:,:)
+<     met_qflx(:,:) = fact1*met_qflxi(nm)%data(:,:) + fact2*met_qflxi(np)%data(:,:)
+<     met_taux(:,:) = fact1*met_tauxi(nm)%data(:,:) + fact2*met_tauxi(np)%data(:,:)
+<     met_tauy(:,:) = fact1*met_tauyi(nm)%data(:,:) + fact2*met_tauyi(np)%data(:,:)
+---
+>     call interp_phys_srf_flds()
+1743c1705
+<     if ( .not. cell_wall_winds ) then
+---
+>     if ( .not. met_cell_wall_winds ) then
+1770a1733
+> 
+1779d1741
+< 
+1803c1765
+<   subroutine open_met_datafile( grid, fname, fileid, times, datapath, check_dims )
+---
+>   subroutine open_met_datafile( fname, fileid, times, datapath, check_dims, grid )
+1810d1771
+<     type (T_FVDYCORE_GRID), intent(in) :: grid
+1815a1777
+>     type (T_FVDYCORE_GRID), optional, intent(in) :: grid
+1826,1829d1787
+<     im         = grid%im
+<     jm         = grid%jm
+<     km         = grid%km
+<     
+1849c1807
+<     if (grid%iam == 0) write(iulog,*)'open_met_datafile: ',trim(filen)
+---
+>     if (masterproc) write(iulog,*) 'open_met_datafile: ',trim(filen)
+1879c1837,1841
+<     if (present(check_dims)) then
+---
+>     if (present(check_dims) .and. present(grid)) then
+>        im         = grid%im
+>        jm         = grid%jm
+>        km         = grid%km
+> 
+1997,1998c1959,1960
+<     p_top = ps0 * exp( - rlx_top_km/h0 )
+<     p_bot = ps0 * exp( - rlx_bot_km/h0 )
+---
+>     p_top = ps0 * exp( - met_rlx_top/h0 )
+>     p_bot = ps0 * exp( - met_rlx_bot/h0 )
+2014c1976
+<        met_rlx = max_rlx
+---
+>        met_rlx = met_max_rlx
+2017c1979
+<     if ( any( met_rlx(:) /= max_rlx) ) then
+---
+>     if ( any( met_rlx(:) /= met_max_rlx) ) then
+2037c1999
+<           met_rlx(k) = max_rlx*real( k - k_top ) / real(k_cnt)
+---
+>           met_rlx(k) = met_max_rlx*real( k - k_top ) / real(k_cnt)
+2043c2005
+<       write(iulog,*) '  mlschk: k = ',plev-k+1,k, plev, BLC_factor(plev-k+1)
+---
+>       write(iulog,*) '  mlschk: k = ',plev-k+1,k, plev, met_BLC_factor(plev-k+1)
+2045,2046c2007,2008
+<       if (BLC_factor(plev-k+1) > -1e-8_r8) then
+<         met_rlx(k) = BLC_factor(plev-k+1)*max_rlx
+---
+>       if (met_BLC_factor(plev-k+1) > -1e-8_r8) then
+>         met_rlx(k) = met_BLC_factor(plev-k+1)*met_max_rlx

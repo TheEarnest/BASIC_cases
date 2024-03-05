@@ -1,0 +1,1 @@
+../Weight_maps/map_1var1L_cos0.25.nc

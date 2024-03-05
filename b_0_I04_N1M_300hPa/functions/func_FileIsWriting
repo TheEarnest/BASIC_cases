@@ -1,0 +1,25 @@
+#! /bin/bash
+###############################################################################
+. ${fhome}/func_debug_Setting_${DebugLev}
+JobStartTime=`date`; echo ${Line_Break}; echo ${Line_Break}
+JobName=func_FileIsWriting
+#tempPrefix=t_${JobName}
+echo "Starting "${JobName}" ...... "
+###############################################################################
+LastModifiedS=`date +%s -r ${file2check} `
+NowS=`date +%s  `
+ModifiedTD=`echo "scale=0;(${NowS}-${LastModifiedS})" | bc -l `
+while [ ${ModifiedTD} -lt 1 ]; do
+  echo ${file2check}' is writing. We wait ...'
+  sleep 0.13s
+  LastModifiedS=`date +%s -r ${file2check} `
+  NowS=`date +%s  `
+  ModifiedTD=`echo "scale=0;(${NowS}-${LastModifiedS})" | bc -l `
+done
+echo ' *** '${file2check}' checked and ready ... *** '
+wait
+###############################################################################
+echo ${JobStartTime}
+echo `date`" || "${JobName}
+echo ${Line_Break}
+#. ${fhome}/func_debug_Setting_${DebugLev}

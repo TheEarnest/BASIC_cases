@@ -1,0 +1,33 @@
+#! /bin/bash
+# -----------------------------------------------------
+# Global configurations
+set -x
+ulimit -s unlimited
+#. ${fhome}/func_debug_Setting
+envConfigFilePath=${supported_models}/${Model}; . ${fhome}/func_getenvxmlValue
+# `func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" ""`
+export SupportData=${scripthome}/${supported_models}/${Model}
+export SPN_dataDir=${DIData}/${Model}
+export BCK_dataDir=${DataIngestionBCK}/${Model}/${yy}
+is_job_monitoring_Model=${DIData}/../Flags/${Model}_monitoring$$
+
+CaseName=`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "Case Name"`
+is_rebuild_Model=`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "Rebuild model"`
+model_type=`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "type"`
+Model_CPU_req=`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "CPU cores"`
+Model_script_base=`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "script base"`
+Model_work_dir=`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "work dir"`
+Model_ref_case=`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "Reference case"`
+Model_ref_date=`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "Reference date"`
+#Model_archive_dir=`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "archive dir"`
+Model_1step_template=`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "one timestep ingestion data template"`
+#Model_restarts=${DataIngestionBCK}/../restarts/${Model}/`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "Restart files for model warm start"`
+Model_restart_file=`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "restart name"`
+export SPG_RES=`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "spectral resolution"`
+Date_time_ini=${Date_time_ini} # yyyy-mm-dd-sssss
+modeldtime=`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "time step"`
+met_rlx=`echo "scale=7;(${DataIngestion_dt}/3600.0/${NudTimeScale})" | bc -l ` 
+
+BaseSize=`du ${SupportData}/${Model_1step_template} | awk -F " " '{print $1}'`
+BaseSize87=`echo "scale=0;(${BaseSize}*0.87)/1.0"| bc -l `
+. ${fhome}/func_debug_Setting_${DebugLev}

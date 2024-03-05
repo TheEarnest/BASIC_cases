@@ -1,0 +1,20 @@
+#! /bin/bash
+###############################################################################
+JobStartTime=`date`; echo ${Line_Break}; echo ${Line_Break}
+JobName=func_demo_nudging_preparing
+tempPrefix=t_${JobName}
+echo "Starting "${JobName}" ...... "
+###############################################################################
+#set -ex
+workdir=/cluster/work/users/earnest/stercp_exp/s1SP_en/SP_nudging/Data/CAM4/198201
+cd ${workdir}
+files=`ls SNF_19820102_00000.nc_*`
+ntem=0
+for file in ${files}; do 
+  ntem=`echo "scale=0;(${ntem}+1)"| bc -l `
+  cdo -s -O -sub SNF_19820102_00000.nc ${file} temp_${ntem}
+done
+###############################################################################
+echo ${JobStartTime}
+echo `date`" || "${JobName}
+echo ${Line_Break}

@@ -1,0 +1,62 @@
+#! /bin/bash
+#SBATCH --account=nn9385k
+#SBATCH --job-name=echam_T63_nud_template
+#SBATCH --output=r_echam_T63_nud_template_out_%j
+#SBATCH --error=r_echam_T63_nud_template_err_%j
+#SBATCH --time=0-0:10:0
+#SBATCH --nodes=8 --ntasks-per-node=32
+####SBATCH --qos=devel
+###SBATCH --qos=short
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=earnestshen@gmail.com
+###############################################################################
+JobStartTime=`date`; echo ${Line_Break}; echo ${Line_Break}
+JobName=func_launch_Models
+# 
+echo "Starting "${JobName}" ...... "
+tempPrefix=t_func_launch_Models
+###############################################################################
+export scripthome=/cluster
+fhome=${scripthome}/functions
+export EnvCongFile=env_configure.xml
+. ${fhome}/func_getGlobalSettings
+. ${fhome}/func_debug_Setting_$DebugLev
+export exphome=/cluster
+
+cd ${scripthome}
+
+while [ ${RunCycle} -gt 0 ]; do 
+  iCoreStart=0
+  iCoreEnd=1
+  for Model in ${Models}; do 
+    envConfigFilePath=${supported_models}/${Model}; . ${fhome}/func_getenvxmlValue
+    CPU4model=`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "CPU cores"`
+    . ${fhome}/../${supported_models}/${Model}/func_launch_Model
+  done
+  wait
+  sleep 7s
+  RunCycle=`echo "scale=0;(${RunCycle}-1)" | bc -l `
+  envConfigFilePath=functions; . ${fhome}/func_setenvxmlValue
+  func_setenvxmlValue "//global-parameters/param" "Model Run cycle" ${RunCycle}
+  # reset DI_data checking flag for all models
+  for Model in ${Models}; do
+    envConfigFilePath=${supported_models}/${Model}; . ${fhome}/func_getenvxmlValue
+    Model_work_dir=`func_getenvxmlValue "//model-parameters[@name=\"${Model}\"]/param" "work dir"`
+    cd ${Model_work_dir}
+    ln -sf is_DI_data_ready_check is_DI_data_ready
+  done
+done
+if [ ${RunCycle} -eq 0 ]; then
+  echo ${Line_Break}
+  echo "Specified cycle finished and terminated." 
+  echo ${Line_Break}
+  cd ${Model_work_dir}/../
+  echo $$ > RunCycle_is_zero
+  #cd ${fhome}/../
+  #./cleaning_all_Drivers
+fi
+wait
+###############################################################################
+echo ${JobStartTime}
+echo `date`" || "${JobName}
+echo ${Line_Break}

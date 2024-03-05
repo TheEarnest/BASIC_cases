@@ -1,0 +1,8 @@
+#! /bin/bash
+if [ "${is_rebuild_Model}" == "TRUE" ]; then
+
+  mkdir -p ${Model_script_dir}
+  mkdir -p ${Model_work_dir}/
+fi
+
+

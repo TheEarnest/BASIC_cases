@@ -1,0 +1,13 @@
+#!/bin/bash
+
+  echo ${Line_Break}
+  echo "  Applying demo sync ..."
+  echo ${Line_Break}
+
+  cd ${SNworkhome} 
+  cp -f ${SupportData}/func_vertinterpolation_demo.ncl .
+
+  . ${SupportData}/func_derive_SP_${Model}
+
+  derive_SP ${d_year} ${d_mm} ${d_day} ${d_sec}
+
